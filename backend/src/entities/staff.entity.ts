@@ -30,7 +30,7 @@ export class Staff {
   @Column({ name: 'user_id' })
   userId: number;
 
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE', onUpdate: 'CASCADE' })
+ @ManyToOne(() => User, (user) => user.staffs)
   @JoinColumn({ name: 'user_id' })
   user: User;
 

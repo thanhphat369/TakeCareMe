@@ -21,7 +21,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../entities/user.entity';
 
-@Controller('api/staff')
+@Controller('/staff')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}

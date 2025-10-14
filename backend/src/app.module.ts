@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { EldersModule } from './modules/elders/elders.module';
-// Removed broken StaffModule import (no such module file)
+import { StaffModule } from './modules/staff/staff.module';
 import { VitalsModule } from './modules/vitals/vitals.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
@@ -40,7 +40,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AuthModule,
     UsersModule,
     EldersModule,
-    // StaffModule is provided via ShiftsModule after fix
+    StaffModule,
     VitalsModule,
     AlertsModule,
     ShiftsModule,

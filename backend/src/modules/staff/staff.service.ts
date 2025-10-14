@@ -15,7 +15,7 @@ export class StaffService {
     private staffRepository: Repository<Staff>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   /**
    * Tạo nhân viên mới (Doctor hoặc Staff)
@@ -85,35 +85,22 @@ export class StaffService {
     const { role, status, shift, department, page = 1, limit = 10 } = query;
 
     const queryBuilder = this.staffRepository
-      .createQueryBuilder('staff')
+      .createQueryBuilder('staff') // ✅ Changed to lowercase
       .leftJoinAndSelect('staff.user', 'user')
-      .orderBy('staff.created_at', 'DESC');
+      .orderBy('staff.createdAt', 'DESC'); // ✅ Use camelCase property name
 
-    // Filters
-    if (role) {
-      queryBuilder.andWhere('user.role = :role', { role });
-    }
-
-    if (status) {
-      queryBuilder.andWhere('staff.status = :status', { status });
-    }
-
-    if (shift) {
-      queryBuilder.andWhere('staff.shift = :shift', { shift });
-    }
-
-    if (department) {
+    if (role) queryBuilder.andWhere('user.role = :role', { role });
+    if (status) queryBuilder.andWhere('staff.status = :status', { status });
+    if (shift) queryBuilder.andWhere('staff.shift = :shift', { shift });
+    if (department)
       queryBuilder.andWhere('staff.department LIKE :department', {
         department: `%${department}%`,
       });
-    }
 
-    // Pagination
     const skip = (page - 1) * limit;
     queryBuilder.skip(skip).take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
-
     return {
       data,
       total,
@@ -192,14 +179,14 @@ export class StaffService {
    */
   async remove(staffId: number): Promise<void> {
     const staff = await this.findOne(staffId);
-    
+
     // Chuyển status thành Inactive
     staff.status = StaffStatus.INACTIVE;
     await this.staffRepository.save(staff);
 
     // Deactivate user account
-    await this.userRepository.update(staff.userId, { 
-      status: UserStatus.INACTIVE 
+    await this.userRepository.update(staff.userId, {
+      status: UserStatus.INACTIVE
     });
   }
 
@@ -217,9 +204,9 @@ export class StaffService {
    */
   async getStaffByShift(shift: string): Promise<Staff[]> {
     return this.staffRepository.find({
-      where: { 
+      where: {
         shift: shift as any,
-        status: StaffStatus.ACTIVE 
+        status: StaffStatus.ACTIVE
       },
       relations: ['user'],
       order: { roleTitle: 'ASC' },
@@ -231,9 +218,9 @@ export class StaffService {
    */
   async getStaffByDepartment(department: string): Promise<Staff[]> {
     return this.staffRepository.find({
-      where: { 
+      where: {
         department: Like(`%${department}%`),
-        status: StaffStatus.ACTIVE 
+        status: StaffStatus.ACTIVE
       },
       relations: ['user'],
       order: { roleTitle: 'ASC' },
@@ -280,10 +267,7 @@ export class StaffService {
       active,
       inactive,
       onLeave,
-      byRole: {
-        doctors,
-        nurses,
-      },
+      byRole: { doctors, nurses },
       byShift: shiftStats,
     };
   }

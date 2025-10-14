@@ -2,19 +2,19 @@
 # BACKEND & FRONTEND DEPENDENCIES
 # ==============================
 /backend/node_modules
-/Index/node_modules
+/Frontend/node_modules
 /backend/dist
-/Index/dist
+/Frontend/dist
 /backend/.cache
-/Index/.cache
+/Frontend/.cache
 /backend/build
-/Index/build
+/Frontend/build
 
 # ==============================
 # ENVIRONMENT FILES
 # ==============================
 /backend/.env
-/Index/.env
+/Frontend/.env
 .env
 .env.local
 .env.*.local

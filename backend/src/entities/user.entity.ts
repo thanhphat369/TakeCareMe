@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToOne, OneToMany } from 'typeorm';
 import { Staff } from './staff.entity';
 import { Elder } from './elder.entity';
 
@@ -55,8 +55,8 @@ export class User {
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   notes: string;
 
-  @OneToOne(() => Staff, staff => staff.user)
-  staff: Staff;
+  @OneToMany(() => Staff, (staff) => staff.user)
+  staffs: Staff[];
 
   @OneToOne(() => Elder, elder => elder.user)
   elder: Elder;

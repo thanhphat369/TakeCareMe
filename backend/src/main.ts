@@ -35,7 +35,7 @@ async function bootstrap() {
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   // Global prefix
-  app.setGlobalPrefix('');
+  app.setGlobalPrefix('api');
 
   const port = configService.get('PORT') || 3000;
   await app.listen(port);
