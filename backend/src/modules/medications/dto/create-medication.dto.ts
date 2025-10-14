@@ -1,0 +1,32 @@
+import { IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
+
+export class CreateMedicationDto {
+  @IsNumber()
+  elderId: number;
+
+  @IsNotEmpty()
+  name: string;
+
+  @IsOptional()
+  dose?: string;
+
+  @IsOptional()
+  frequency?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: Date;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: Date;
+
+  @IsOptional()
+  notes?: string;
+
+  @IsOptional()
+  @IsNumber()
+  prescribedBy?: number;
+}
+
+
