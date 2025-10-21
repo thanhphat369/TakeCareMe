@@ -31,7 +31,7 @@ export class User {
   @Column({ type: 'varchar', length: 15, nullable: true })
   phone: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100, unique: true, nullable: true, })
   email: string;
 
   @Column({ name: 'password_hash', type: 'nvarchar', length: 255 })
@@ -40,8 +40,11 @@ export class User {
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   avatar: string;
 
-  @Column({ type: 'nvarchar', length: 20, default: UserStatus.ACTIVE })
+  @Column({ type: 'nvarchar', length: 20, default: UserStatus.INACTIVE })
   status: UserStatus;
+
+  // @Column({ name: 'activation_code', type: 'nvarchar', length: 10, nullable: true })
+  // activationCode: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

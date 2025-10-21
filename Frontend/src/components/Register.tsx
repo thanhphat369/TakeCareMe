@@ -1,24 +1,7 @@
 import React, { useState } from 'react';
-import {
-  Card,
-  Button,
-  Form,
-  Input,
-  Alert,
-  Divider,
-  Select,
-  Space,
-  message,
-} from 'antd';
-import {
-  UserOutlined,
-  LockOutlined,
-  SafetyOutlined,
-  MailOutlined,
-  PhoneOutlined,
-  DatabaseOutlined,
-} from '@ant-design/icons';
-import api from '../config/api'; // ✅ dùng axios instance chuẩn
+import { Card, Button, Form, Input, Alert, message, Select, Divider, } from 'antd';
+import { UserOutlined, LockOutlined, SafetyOutlined, MailOutlined, PhoneOutlined, } from '@ant-design/icons';
+import api from '../config/api';
 
 const { Option } = Select;
 
@@ -30,55 +13,65 @@ interface RegisterProps {
 interface RegisterResponse {
   message: string;
   user: {
-    user_id: number;
-    full_name: string;
+    userId: number;
+    fullName: string;
     email: string;
     role: string;
   };
 }
 
-const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
+const Register: React.FC<RegisterProps> = ({ onBackToLogin }) => {
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // ✅ Hàm gọi API thật tới NestJS backend
-  const handleRegister = async (values: any) => {
+  // ====================
+  // Hàm xử lý đăng ký
+  // ====================
+  const handleRegister = async (values: {
+    fullName: string;
+    email: string;
+    phone?: string;
+    password: string;
+    confirmPassword?: string;
+    role: string;
+  }) => {
     try {
       setLoading(true);
       setError(null);
       setSuccess(null);
 
-      console.log('Gửi dữ liệu đăng ký thật:', values);
+      // 🧹 Loại bỏ confirmPassword (backend không nhận)
+      const { confirmPassword, ...dataToSend } = values;
+      console.log('Gửi dữ liệu đăng ký:', dataToSend);
 
-      // Gọi API backend NestJS
-      const response = await api.post<RegisterResponse>('/api/auth/register', {
-        fullName: values.fullName,
-        email: values.email,
-        phone: values.phone || null,
-        password: values.password,
-        role: values.role,
-        avatar: values.avatar || null,
-      });
+      // Gọi API backend
+      const res = await api.post<RegisterResponse>('/api/auth/register', dataToSend);
+      console.log('✅ Kết quả từ Backend:', res.data);
 
-      console.log('✅ Kết quả từ Backend:', response.data);
+      // Cập nhật state hiển thị thành công
+      setSuccess(res.data.message || 'Đăng ký thành công!');
 
-      setSuccess('🎉 Đăng ký thành công! Dữ liệu đã lưu vào SQL Server.');
-      message.success('Đăng ký thành công!');
+      // Hiển thị popup toast
+      message.success(res.data.message || 'Đăng ký thành công!');
 
-      // Chuyển về trang đăng nhập sau 2 giây
+      // Quay lại đăng nhập sau 2 giây
       setTimeout(() => {
         onBackToLogin();
       }, 2000);
     } catch (err: any) {
       console.error('❌ Lỗi đăng ký:', err);
 
-      let msg = 'Không thể đăng ký tài khoản. Vui lòng thử lại.';
-      if (err.response?.data?.message) msg = err.response.data.message;
-      else if (err.message.includes('Network')) msg = 'Không kết nối được đến backend API.';
+      // Lấy message từ backend (NestJS có thể trả dạng chuỗi hoặc mảng)
+      const backendMessage = err.response?.data?.message;
 
+      const msg = Array.isArray(backendMessage)
+        ? backendMessage.join(', ')
+        : backendMessage || 'Đăng ký thất bại, vui lòng thử lại.';
+
+      // Chỉ hiển thị trong Alert, không dùng message.error
       setError(msg);
-      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -87,22 +80,19 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card
-        className="w-full max-w-md shadow-xl"
+        className="w-full max-w-md shadow-xl rounded-2xl"
         title={
           <div className="text-center">
             <SafetyOutlined className="text-4xl text-blue-600 mb-2" />
-            <h1 className="text-2xl font-bold text-gray-800">
-              Đăng ký tài khoản
-            </h1>
-            <p className="text-gray-600 text-sm">
-              Take Care Me - Hệ thống chăm sóc người cao tuổi
-            </p>
+            <h1 className="text-2xl font-bold text-gray-800">Đăng ký tài khoản</h1>
+            <p className="text-gray-600 text-sm">Hệ thống chăm sóc người cao tuổi - Take Care Me</p>
           </div>
         }
       >
         <Form
           layout="vertical"
           onFinish={handleRegister}
+          form={form}
           initialValues={{ role: 'Family' }}
         >
           <Form.Item
@@ -113,11 +103,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
               { min: 2, message: 'Tên phải có ít nhất 2 ký tự' },
             ]}
           >
-            <Input
-              size="large"
-              prefix={<UserOutlined />}
-              placeholder="Nhập họ và tên đầy đủ"
-            />
+            <Input size="large" prefix={<UserOutlined />} placeholder="Nhập họ và tên đầy đủ" />
           </Form.Item>
 
           <Form.Item
@@ -128,25 +114,15 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
               { type: 'email', message: 'Email không hợp lệ' },
             ]}
           >
-            <Input
-              size="large"
-              prefix={<MailOutlined />}
-              placeholder="Nhập email"
-            />
+            <Input size="large" prefix={<MailOutlined />} placeholder="Nhập email" />
           </Form.Item>
 
           <Form.Item
             label="Số điện thoại"
             name="phone"
-            rules={[
-              { pattern: /^[0-9]{9,15}$/, message: 'Số điện thoại không hợp lệ' },
-            ]}
+            rules={[{ pattern: /^[0-9]{9,15}$/, message: 'Số điện thoại không hợp lệ' }]}
           >
-            <Input
-              size="large"
-              prefix={<PhoneOutlined />}
-              placeholder="Nhập số điện thoại (tuỳ chọn)"
-            />
+            <Input size="large" prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại (tuỳ chọn)" />
           </Form.Item>
 
           <Form.Item
@@ -157,11 +133,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
               { min: 6, message: 'Mật khẩu tối thiểu 6 ký tự' },
             ]}
           >
-            <Input.Password
-              size="large"
-              prefix={<LockOutlined />}
-              placeholder="Nhập mật khẩu"
-            />
+            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhập mật khẩu" />
           </Form.Item>
 
           <Form.Item
@@ -180,11 +152,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
               }),
             ]}
           >
-            <Input.Password
-              size="large"
-              prefix={<LockOutlined />}
-              placeholder="Nhập lại mật khẩu"
-            />
+            <Input.Password size="large" prefix={<LockOutlined />} placeholder="Nhập lại mật khẩu" />
           </Form.Item>
 
           <Form.Item
@@ -200,6 +168,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
             </Select>
           </Form.Item>
 
+          {/* Hiển thị lỗi từ backend */}
           {error && (
             <Alert
               message="Lỗi đăng ký"
@@ -212,6 +181,7 @@ const Register: React.FC<RegisterProps> = ({ onSuccess, onBackToLogin }) => {
             />
           )}
 
+          {/* Hiển thị thành công */}
           {success && (
             <Alert
               message="Đăng ký thành công!"

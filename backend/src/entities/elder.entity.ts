@@ -12,7 +12,7 @@ export class Elder {
   @PrimaryGeneratedColumn({ name: 'elder_id' })
   elderId: number;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', nullable: false })
   userId: number;
 
   @ManyToOne(() => User, { eager: true })
@@ -24,6 +24,12 @@ export class Elder {
 
   @Column({ type: 'date', nullable: true })
   dob: Date;
+
+  @Column({ type: 'int', nullable: true })
+  age: Date;
+  
+  @Column({ type: 'varchar', length: 15, nullable: true })
+  phone: string;
 
   @Column({ type: 'char', length: 1, nullable: true })
   gender: string;
@@ -40,6 +46,9 @@ export class Elder {
 
   @Column({ type: 'nvarchar', length: 20, default: 'Active' })
   status: string;
+
+  @Column({ type: 'nvarchar', length: 500, nullable: true })
+  note: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

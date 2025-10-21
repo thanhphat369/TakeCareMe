@@ -8,7 +8,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(userData: Partial<User>): Promise<User> {
     const user = this.userRepository.create(userData);
@@ -35,9 +35,16 @@ export class UsersService {
     return this.userRepository.findOne({ where: { email } });
   }
 
+  async findByPhone(phone: string) {
+    return this.userRepository.findOne({ where: { phone } });
+  }
+
+  // async findByActivationCode(code: string) {
+  //   return this.userRepository.findOne({ where: { activationCode: code } });
+  // }
   async update(id: string | number, userData: Partial<User>): Promise<User> {
     const user = await this.userRepository.findOne({ where: { userId: Number(id) } });
-    
+
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }

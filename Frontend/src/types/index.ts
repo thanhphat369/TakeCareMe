@@ -1,42 +1,59 @@
-// User & Authentication Types
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: 'admin' | 'doctor' | 'nurse' | 'staff';
-  avatar?: string;
-}
+// export interface Elderly {
+//   id: string;
+//   name: string;
+//   age: number;
+//   gender: 'male' | 'female';
+//   phone: string;
+//   address: string;
+//   emergencyContact: string;
+//   medicalHistory: string[];
+//   medications: Medication[];
+//   allergies: string[];
+//   bloodType: string;
+//   doctor: string;
+//   lastCheckup: Date;
+//   nextCheckup: Date;
+//   status: 'healthy' | 'monitoring' | 'critical';
+//   notes: string;
+//   createdAt: Date;
+//   updatedAt: Date;
+// }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface AuthResponse {
-  user: User;
-  token: string;
-}
-
-// Elderly Types
 export interface Elderly {
   id: string;
-  name: string;
-  age: number;
-  gender: 'male' | 'female';
+  fullName: string;
+  age?: number | null;
+  dob?: Date;
+  gender: string;
+  address?: string;
   phone: string;
-  emergencyContact: string;
-  address: string;
-  bloodType: string;
-  doctor: string;
-  status: 'healthy' | 'monitoring' | 'critical';
-  lastCheckup?: Date;
-  nextCheckup?: Date;
-  notes?: string;
-  medications: string[]; // Array of medication names
-  medicalHistory?: string; // Single text field
-  allergies?: string; // Comma-separated string
+  contactPersonId?: number | null;
+  contactName?: string;
+  contactPhone?: string;
+  relationship?: string;
+  note?: string;
+  status: string;
   createdAt: Date;
   updatedAt: Date;
+  emergencyContact: string;
+  medicalHistory: string[];
+  medications: Medication[];
+  allergies: string[];
+  bloodType: string;
+  doctor: string;
+  lastCheckup: Date;
+  nextCheckup: Date;
+  
+}
+
+export interface Medication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  startDate: Date;
+  endDate?: Date;
+  notes: string;
 }
 
 // Staff Types
@@ -60,69 +77,6 @@ export interface Staff {
   updatedAt?: Date;
 }
 
-// Appointment Types
-export interface Appointment {
-  id: string;
-  elderlyId: string;
-  elderlyName: string;
-  doctorId: string;
-  doctorName: string;
-  date: Date;
-  time: string;
-  type: 'checkup' | 'followup' | 'emergency';
-  status: 'scheduled' | 'completed' | 'cancelled';
-  notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Medical Record Types
-export interface MedicalRecord {
-  id: string;
-  elderlyId: string;
-  date: Date;
-  diagnosis: string;
-  treatment: string;
-  medications: string[];
-  doctorId: string;
-  doctorName: string;
-  notes?: string;
-  attachments?: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Health Metrics Types (legacy compatibility)
-export interface HealthRecord {
-  id: string;
-  elderlyId: string;
-  date: Date;
-  diagnosis: string;
-  treatment: string;
-  medications: string[];
-  doctorId: string;
-  doctorName: string;
-  notes?: string;
-  attachments?: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface HealthMetrics {
-  id: string;
-  elderlyId: string;
-  date: Date;
-  bloodPressure?: string;
-  heartRate?: number;
-  temperature?: number;
-  weight?: number;
-  bloodSugar?: number;
-  notes?: string;
-  recordedBy: string;
-  createdAt: Date;
-}
-
-// Caregiver Types
 export interface Caregiver {
   id: string;
   name: string;
@@ -131,61 +85,75 @@ export interface Caregiver {
   specialization: string[];
   experience: number;
   rating: number;
-  status: 'available' | 'busy' | 'off';
+  status: 'available' | 'busy' | 'offline';
   assignedElderly: string[];
 }
 
-// Statistics Types
-export interface DashboardStats {
-  totalElderly: number;
-  totalStaff: number;
-  todayAppointments: number;
-  criticalCases: number;
-  elderlyByStatus: {
-    healthy: number;
-    monitoring: number;
-    critical: number;
+export interface Appointment {
+  id: string;
+  elderlyId: string;
+  caregiverId: string;
+  type: 'checkup' | 'medication' | 'exercise' | 'social' | 'emergency';
+  title: string;
+  description: string;
+  start: Date;
+  end: Date;
+  status: 'scheduled' | 'in-progress' | 'completed' | 'cancelled';
+  location: string;
+  notes: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface HealthRecord {
+  id: string;
+  elderlyId: string;
+  date: Date;
+  bloodPressure: {
+    systolic: number;
+    diastolic: number;
   };
-  staffByRole: {
-    doctors: number;
-    nurses: number;
-  };
-  recentActivities: Activity[];
+  heartRate: number;
+  temperature: number;
+  weight: number;
+  height: number;
+  symptoms: string[];
+  notes: string;
+  recordedBy: string;
 }
 
 export interface Activity {
   id: string;
-  type: 'appointment' | 'checkup' | 'admission' | 'discharge';
+  elderlyId: string;
+  type: 'exercise' | 'social' | 'cognitive' | 'recreational';
+  title: string;
   description: string;
-  timestamp: Date;
-  elderlyName?: string;
-  staffName?: string;
+  duration: number; // in minutes
+  date: Date;
+  status: 'completed' | 'in-progress' | 'cancelled';
+  notes: string;
 }
 
-// Pagination Types
-export interface PaginationParams {
-  page: number;
-  limit: number;
+export interface DashboardStats {
+  totalElderly: number;
+  activeElderly: number;
+  totalAppointments: number;
+  completedAppointments: number;
+  totalCaregivers: number;
+  availableCaregivers: number;
+  criticalCases: number;
+  upcomingAppointments: number;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+export interface ChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor?: string | string[];
+    borderColor?: string | string[];
+    borderWidth?: number;
+  }[];
 }
 
-// API Response Types
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
-}
 
-export interface ErrorResponse {
-  message: string;
-  statusCode: number;
-  error?: string;
-}

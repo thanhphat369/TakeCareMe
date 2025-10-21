@@ -27,11 +27,13 @@ import AlertsManagement from './components/AlertsManagement';
 import StaffManagement from './components/StaffManagement';
 import PaymentManagement from './components/PaymentManagement';
 import VitalSignsMonitor from './components/VitalSignsMonitor';
+// import ActivateAccount from './components/ActivateAccount';
 
 const { Header, Sider, Content } = Layout;
 
 // Định nghĩa các vai trò người dùng (khớp với backend)
 export type UserRole = 'SuperAdmin' | 'Admin' | 'Doctor' | 'Staff' | 'Family' | 'Elder';
+
 
 export interface User {
   userId: number;
@@ -48,6 +50,7 @@ const App: React.FC = () => {
   const [selectedMenu, setSelectedMenu] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showRegister, setShowRegister] = useState(false);
+  // const [showActivate, setShowActivate] = useState(false);
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -187,10 +190,20 @@ const App: React.FC = () => {
   ];
 
   if (!authed) {
+  //   if (showActivate) {
+  //   return (
+  //     <ActivateAccount
+  //       onActivated={() => {
+  //         setShowActivate(false);
+  //       }}
+  //       onBackToLogin={() => setShowActivate(false)}
+  //     />
+  //   );
+  // }
     if (showRegister) {
       return (
         <Register 
-          onSuccess={() => setAuthed(true)} 
+          onSuccess={() => setAuthed(true)}
           onBackToLogin={() => setShowRegister(false)}
         />
       );

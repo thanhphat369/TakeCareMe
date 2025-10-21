@@ -25,6 +25,12 @@ export class AuthController {
     return req.user;
   }
 
+
+//  @Post('activate')
+// async activate(@Body('code') code: string) {
+//   return this.authService.activateAccount(code);
+// }
+
   @UseGuards(JwtAuthGuard)
   @Patch('change-password')
   async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {

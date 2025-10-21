@@ -16,7 +16,23 @@ const Calendar: React.FC = () => {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form] = Form.useForm();
 
-    const getEventColor = (type: string) => {
+  const events = useMemo(() => {
+    return appointments.map(appointment => ({
+      id: appointment.id,
+      title: appointment.title,
+      start: appointment.start,
+      end: appointment.end,
+      backgroundColor: getEventColor(appointment.type),
+      borderColor: getEventColor(appointment.type),
+      extendedProps: {
+        ...appointment,
+        elderly: mockElderly.find(e => e.id === appointment.elderlyId),
+        caregiver: mockCaregivers.find(c => c.id === appointment.caregiverId),
+      }
+    }));
+  }, [appointments]);
+
+  const getEventColor = (type: string) => {
     switch (type) {
       case 'checkup':
         return '#3b82f6';
@@ -33,22 +49,6 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const getTypeText = (type: string) => {
-    switch (type) {
-      case 'checkup':
-        return 'Khám sức khỏe';
-      case 'medication':
-        return 'Uống thuốc';
-      case 'exercise':
-        return 'Tập thể dục';
-      case 'social':
-        return 'Hoạt động xã hội';
-      case 'emergency':
-        return 'Khẩn cấp';
-      default:
-        return type;
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -80,22 +80,6 @@ const Calendar: React.FC = () => {
     }
   };
 
-  const events = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: appointment.title,
-      start: appointment.start,
-      end: appointment.end,
-      backgroundColor: getEventColor(appointment.type),
-      borderColor: getEventColor(appointment.type),
-      extendedProps: {
-        ...appointment,
-        elderly: mockElderly.find(e => e.id === appointment.elderlyId),
-        caregiver: mockCaregivers.find(c => c.id === appointment.caregiverId),
-      }
-    }));
-  }, [appointments]);
-
   const handleDateSelect = (selectInfo: any) => {
     setEditingAppointment(null);
     setIsModalVisible(true);
@@ -121,8 +105,8 @@ const Calendar: React.FC = () => {
       const newAppointment: Appointment = {
         ...values,
         id: editingAppointment?.id || Date.now().toString(),
-        start: values.start.toDate(),
-        end: values.end.toDate(),
+        start: values.start ? values.start.toDate() : new Date(),
+        end: values.end ? values.end.toDate() : new Date(),
         createdAt: editingAppointment?.createdAt || new Date(),
         updatedAt: new Date(),
       };
@@ -264,7 +248,7 @@ const Calendar: React.FC = () => {
             {editingAppointment && (
               <div className="space-y-2 text-sm">
                 <div>
-                  <strong>Người cao tuổi:</strong> {mockElderly.find(e => e.id === editingAppointment.elderlyId)?.name}
+                  <strong>Người cao tuổi:</strong> {mockElderly.find(e => e.id === editingAppointment.elderlyId)?.fullName}
                 </div>
                 <div>
                   <strong>Người chăm sóc:</strong> {mockCaregivers.find(c => c.id === editingAppointment.caregiverId)?.name}
@@ -309,7 +293,7 @@ const Calendar: React.FC = () => {
             <Select>
               {mockElderly.map(elderly => (
                 <Option key={elderly.id} value={elderly.id}>
-                  {elderly.name} ({elderly.age} tuổi)
+                  {elderly.fullName} ({elderly.age} tuổi)
                 </Option>
               ))}
             </Select>

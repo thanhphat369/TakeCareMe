@@ -97,7 +97,7 @@ const CustomReport: React.FC = () => {
       key: 'elderlyId',
       render: (elderlyId: string) => {
         const elderly = mockElderly.find(e => e.id === elderlyId);
-        return elderly ? elderly.name : 'Không xác định';
+        return elderly ? elderly.fullName : 'Không xác định';
       },
     },
     {
@@ -153,7 +153,7 @@ const CustomReport: React.FC = () => {
       key: 'elderlyId',
       render: (elderlyId: string) => {
         const elderly = mockElderly.find(e => e.id === elderlyId);
-        return elderly ? elderly.name : 'Không xác định';
+        return elderly ? elderly.fullName : 'Không xác định';
       },
     },
     {
@@ -237,7 +237,7 @@ const CustomReport: React.FC = () => {
                   <Option value="all">Tất cả</Option>
                   {mockElderly.map(elderly => (
                     <Option key={elderly.id} value={elderly.id}>
-                      {elderly.name}
+                      {elderly.fullName}
                     </Option>
                   ))}
                 </Select>

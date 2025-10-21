@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import apiClient from '../api/apiClient';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   Button,
@@ -8,218 +7,143 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
   Select,
   DatePicker,
-  InputNumber,
-  message,
-  Popconfirm,
-  Card,
   Row,
   Col,
+  Card,
   Statistic,
+  Popconfirm,
+  message,
 } from 'antd';
 import {
-  PlusOutlined,
+  EyeOutlined,
   EditOutlined,
   DeleteOutlined,
-  EyeOutlined,
-  HeartOutlined,
-  PhoneOutlined,
-  HomeOutlined,
+  PlusOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Elderly } from '../types';
-import ElderlyDetailModal from './modals/ElderlyDetailModal';
 import dayjs from 'dayjs';
+
+// 🟢 cập nhật: import đúng type Elder
+import { Elderly } from '../types';
+import {
+  fetchEldersController,
+  createElderController,
+  updateElderController,
+  deleteElderController,
+} from '../controllers/eldersController';
+import ElderDetailModal from './modals/ElderlyDetailModal'; // 🟢 cập nhật: đổi tên modal tương ứng
 
 const { Option } = Select;
 
 const ElderlyManagement: React.FC = () => {
-  const [elderly, setElderly] = useState<Elderly[]>([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    healthy: 0,
-    monitoring: 0,
-    critical: 0,
-  });
+  // 🟢 cập nhật: đổi state từ elderly → elders, type Elder
+  const [elders, setElders] = useState<Elderly[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
-  const [editingElderly, setEditingElderly] = useState<Elderly | null>(null);
-  const [selectedElderly, setSelectedElderly] = useState<Elderly | null>(null);
   const [form] = Form.useForm();
 
-  // Fetch elderly list from backend
-  const fetchElderly = async () => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingElder, setEditingElder] = useState<Elderly | null>(null);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [selectedElder, setSelectedElder] = useState<Elderly | null>(null);
+
+  // 🟢 cập nhật: thêm fetch dữ liệu thật từ backend
+  const loadElders = async () => {
     try {
       setLoading(true);
-
-      const res = await apiClient.get('/api/elderly', {
-        params: { page: 1, limit: 100 },
-      });
-
-      console.log('Response from /elderly:', res.data);
-
-      const raw = res.data?.data || [];
-
-      // Map backend data to frontend format
-      const formatted = raw.map((item: any) => ({
-        id: item.elderlyId.toString(),
-        name: item.fullName,
-        age: item.age,
-        gender: item.gender,
-        phone: item.phone,
-        emergencyContact: item.emergencyContact,
-        address: item.address,
-        bloodType: item.bloodType,
-        doctor: item.doctor,
-        status: item.status,
-        lastCheckup: item.lastCheckup ? new Date(item.lastCheckup) : undefined,
-        nextCheckup: item.nextCheckup ? new Date(item.nextCheckup) : undefined,
-        notes: item.notes,
-        medications: item.currentMedications ? item.currentMedications.split(',').map((m: string) => m.trim()) : [],
-        medicalHistory: item.medicalHistory,
-        allergies: item.allergies,
-        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
-        updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
-      }));
-
-      setElderly(formatted);
-    } catch (error: any) {
-      console.error('Lỗi tải danh sách người cao tuổi:', error);
-
-      if (error.response?.status === 401) {
-        message.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-        localStorage.removeItem('accessToken');
-        window.location.href = '/login';
-      } else {
-        message.error(
-          error.response?.data?.message ||
-          'Không thể tải danh sách người cao tuổi.'
-        );
-      }
+      const data = await fetchEldersController();
+      setElders(data);
+    } catch (error) {
+      message.error('Không thể tải danh sách người cao tuổi');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch statistics
-  const fetchStatistics = async () => {
-    try {
-      const res = await apiClient.get('/api/elderly/statistics');
-      const data = res.data;
-      setStats({
-        total: data.total || 0,
-        healthy: data.byStatus?.healthy || 0,
-        monitoring: data.byStatus?.monitoring || 0,
-        critical: data.byStatus?.critical || 0,
-      });
-    } catch (error) {
-      console.error('Lỗi tải thống kê:', error);
-    }
-  };
-
   useEffect(() => {
-    fetchElderly();
-    fetchStatistics();
+    loadElders();
   }, []);
 
   const handleAdd = () => {
-    setEditingElderly(null);
-    form.resetFields();
+    setEditingElder(null);
     setIsModalVisible(true);
+    form.resetFields();
   };
 
   const handleEdit = (record: Elderly) => {
-    setEditingElderly(record);
-    form.setFieldsValue({
-      fullName: record.name,
-      age: record.age,
-      gender: record.gender,
-      phone: record.phone,
-      emergencyContact: record.emergencyContact,
-      address: record.address,
-      bloodType: record.bloodType,
-      doctor: record.doctor,
-      status: record.status,
-      lastCheckup: record.lastCheckup ? dayjs(record.lastCheckup) : null,
-      nextCheckup: record.nextCheckup ? dayjs(record.nextCheckup) : null,
-      notes: record.notes,
-      medicalHistory: record.medicalHistory,
-      currentMedications: record.medications && record.medications.length > 0 ? record.medications.join(', ') : '',
-      allergies: record.allergies,
-    });
+    setEditingElder(record);
     setIsModalVisible(true);
+    form.setFieldsValue({
+      fullName: record.fullName,
+      gender: record.gender,
+      dob: record.dob ? dayjs(record.dob) : undefined,
+      age: record.age,
+      phone: record.phone,
+      address: record.address,
+      contactPhone: record.contactPhone,
+      note: record.note,
+    });
+  };
+
+  const handleView = (record: Elderly) => {
+    setSelectedElder(record);
+    setIsDetailModalVisible(true);
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await apiClient.delete(`/api/elderly/${id}`);
-      message.success('Đã xóa thành công');
-      fetchElderly();
-      fetchStatistics();
-    } catch (error: any) {
-      console.error('Lỗi xóa:', error);
-      message.error(error.response?.data?.message || 'Không thể xóa');
+      await deleteElderController(id);
+      message.success('Xóa thành công');
+      loadElders();
+    } catch {
+      message.error('Xóa thất bại');
     }
   };
 
-  const handleView = (record: Elderly) => {
-    setSelectedElderly(record);
-    setIsDetailModalVisible(true);
-  };
-
-  const handleSubmit = async (values: any) => {
+  const handleModalOk = async () => {
     try {
-      const payload = {
-        fullName: values.fullName,
-        age: Number(values.age),
-        gender: values.gender,
-        phone: values.phone,
-        emergencyContact: values.emergencyContact,
-        address: values.address,
-        bloodType: values.bloodType,
-        doctor: values.doctor,
-        status: values.status,
-        lastCheckup: values.lastCheckup ? values.lastCheckup.format('YYYY-MM-DD') : null,
-        nextCheckup: values.nextCheckup ? values.nextCheckup.format('YYYY-MM-DD') : null,
-        notes: values.notes || null,
-        medicalHistory: values.medicalHistory || null,
-        currentMedications: values.currentMedications || null,
-        allergies: values.allergies || null,
-      };
-
-      if (editingElderly) {
-        await apiClient.patch(`/api/elderly/${editingElderly.id}`, payload);
+      const values = await form.validateFields();
+     if (values.dob && dayjs.isDayjs(values.dob)) {
+  values.dob = values.dob.format('YYYY-MM-DD');
+} else if (values.dob instanceof Date) {
+  values.dob = dayjs(values.dob).format('YYYY-MM-DD');
+}
+console.log('✅ DOB sau khi convert:', values.dob);
+      if (editingElder) {
+        await updateElderController(editingElder.id, values);
         message.success('Cập nhật thành công');
       } else {
-        await apiClient.post('/api/elderly', payload);
+        await createElderController(values);
         message.success('Thêm mới thành công');
       }
-
+      
       setIsModalVisible(false);
-      form.resetFields();
-      fetchElderly();
-      fetchStatistics();
+      loadElders();
     } catch (error: any) {
-      console.error('Submit error:', error);
-      const errorMsg = error.response?.data?.message;
-
-      if (Array.isArray(errorMsg)) {
-        message.error(errorMsg.join(', '));
-      } else {
-        message.error(errorMsg || 'Lưu thất bại');
-      }
-    }
-  };
+  console.error('❌ Lỗi khi lưu:', error);
+  if (error.response) {
+    console.error('📡 Response status:', error.response.status);
+    console.error('📄 Response data:', JSON.stringify(error.response.data, null, 2));
+    message.error(error.response.data?.message || 'Lưu dữ liệu thất bại');
+  } else if (error.request) {
+    console.error('🚫 Không nhận được phản hồi từ server:', error.request);
+    message.error('Không thể kết nối tới máy chủ.');
+  } else {
+    console.error('⚙️ Lỗi khi cấu hình request:', error.message);
+    message.error('Lỗi khi gửi yêu cầu.');
+  }; }} 
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'healthy':
+      case 'Active':
         return 'green';
       case 'monitoring':
         return 'orange';
       case 'critical':
+      case 'Inactive':
         return 'red';
       default:
         return 'default';
@@ -229,21 +153,24 @@ const ElderlyManagement: React.FC = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'healthy':
+      case 'Active':
         return 'Khỏe mạnh';
       case 'monitoring':
         return 'Theo dõi';
       case 'critical':
-        return 'Khẩn cấp';
+      case 'Inactive':
+        return 'Nguy cấp';
       default:
         return status;
     }
   };
 
+  // 🟢 cập nhật: thay Elderly → Elder, và các field đồng bộ backend
   const columns = [
     {
-      title: 'Tên',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Họ và tên',
+      dataIndex: 'fullName',
+      key: 'fullName',
       render: (text: string, record: Elderly) => (
         <div>
           <div className="font-medium">{text}</div>
@@ -252,18 +179,19 @@ const ElderlyManagement: React.FC = () => {
       ),
     },
     {
-      title: 'Tuổi',
-      dataIndex: 'age',
-      key: 'age',
-      sorter: (a: Elderly, b: Elderly) => a.age - b.age,
+      title: 'Ngày sinh',
+      dataIndex: 'dob',
+      key: 'dob',
+      render: (dob?: Date) =>
+        dob ? new Date(dob).toLocaleDateString('vi-VN') : '-',
     },
     {
       title: 'Giới tính',
       dataIndex: 'gender',
       key: 'gender',
       render: (gender: string) => (
-        <Tag color={gender === 'male' ? 'blue' : 'pink'}>
-          {gender === 'male' ? 'Nam' : 'Nữ'}
+        <Tag color={gender === 'M' ? 'blue' : 'pink'}>
+          {gender === 'M' ? 'Nam' : 'Nữ'}
         </Tag>
       ),
     },
@@ -272,21 +200,23 @@ const ElderlyManagement: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
+        <Tag color={getStatusColor(status)}>{getStatusText(status)}</Tag>
       ),
     },
     {
-      title: 'Bác sĩ',
-      dataIndex: 'doctor',
-      key: 'doctor',
+      title: 'SĐT liên hệ',
+      dataIndex: 'contactPhone',
+      key: 'contactPhone',
     },
     {
-      title: 'Khám tiếp theo',
-      dataIndex: 'nextCheckup',
-      key: 'nextCheckup',
-      render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '-',
+      title: 'Địa chỉ',
+      dataIndex: 'address',
+      key: 'address',
+    },
+    {
+      title: 'Ghi chú',
+      dataIndex: 'note',
+      key: 'note',
     },
     {
       title: 'Hành động',
@@ -316,12 +246,23 @@ const ElderlyManagement: React.FC = () => {
     },
   ];
 
+  // cập nhật: tính thống kê dựa trên danh sách elders
+  const stats = {
+    total: elders.length,
+    active: elders.filter((e) => e.status === 'Active').length,
+    inactive: elders.filter((e) => e.status === 'Inactive').length,
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Quản lý người cao tuổi</h1>
-          <p className="text-gray-600">Quản lý thông tin và theo dõi sức khỏe người cao tuổi</p>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            Quản lý người cao tuổi
+          </h1>
+          <p className="text-gray-600">
+            Quản lý thông tin và theo dõi sức khỏe người cao tuổi
+          </p>
         </div>
         <Button
           type="primary"
@@ -333,9 +274,9 @@ const ElderlyManagement: React.FC = () => {
         </Button>
       </div>
 
-      {/* Statistics */}
+      {/* 🟢 cập nhật: thống kê */}
       <Row gutter={16}>
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
               title="Tổng số"
@@ -345,40 +286,31 @@ const ElderlyManagement: React.FC = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
-              title="Khỏe mạnh"
-              value={stats.healthy}
+              title="Đang hoạt động"
+              value={stats.active}
               valueStyle={{ color: '#10b981' }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={8}>
           <Card>
             <Statistic
-              title="Theo dõi"
-              value={stats.monitoring}
-              valueStyle={{ color: '#f59e0b' }}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="Khẩn cấp"
-              value={stats.critical}
+              title="Ngừng hoạt động"
+              value={stats.inactive}
               valueStyle={{ color: '#ef4444' }}
             />
           </Card>
         </Col>
       </Row>
 
-      {/* Table */}
+      {/* 🟢 cập nhật: bảng dữ liệu elders */}
       <Card>
         <Table
           columns={columns}
-          dataSource={elderly}
+          dataSource={elders}
           loading={loading}
           rowKey="id"
           pagination={{
@@ -391,29 +323,17 @@ const ElderlyManagement: React.FC = () => {
         />
       </Card>
 
-      {/* Add/Edit Modal */}
+      {/* 🟢 cập nhật: form thêm/sửa */}
       <Modal
-        title={editingElderly ? 'Chỉnh sửa thông tin' : 'Thêm mới người cao tuổi'}
+        title={editingElder ? 'Chỉnh sửa thông tin' : 'Thêm mới người cao tuổi'}
         open={isModalVisible}
-        onOk={() => form.submit()}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-        width={800}
+        onOk={handleModalOk}
+        onCancel={() => setIsModalVisible(false)}
+        width={700}
         okText="Lưu"
         cancelText="Hủy"
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            status: 'healthy',
-            gender: 'male',
-            bloodType: 'A+',
-          }}
-        >
+        <Form form={form} layout="vertical">
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -426,6 +346,18 @@ const ElderlyManagement: React.FC = () => {
             </Col>
             <Col span={6}>
               <Form.Item
+                name="gender"
+                label="Giới tính"
+                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+              >
+                <Select>
+                  <Option value="M">Nam</Option>
+                  <Option value="F">Nữ</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item
                 name="age"
                 label="Tuổi"
                 rules={[{ required: true, message: 'Vui lòng nhập tuổi' }]}
@@ -433,145 +365,35 @@ const ElderlyManagement: React.FC = () => {
                 <InputNumber min={60} max={120} className="w-full" />
               </Form.Item>
             </Col>
-            <Col span={6}>
-              <Form.Item
-                name="gender"
-                label="Giới tính"
-                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
-              >
-                <Select>
-                  <Option value="male">Nam</Option>
-                  <Option value="female">Nữ</Option>
-                </Select>
-              </Form.Item>
-            </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="phone"
-                label="Số điện thoại"
-                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
-              >
-                <Input />
+              <Form.Item name="dob" label="Ngày sinh">
+                <DatePicker className="w-full" format="DD/MM/YYYY" />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item
-                name="emergencyContact"
-                label="Liên hệ khẩn cấp"
-                rules={[{ required: true, message: 'Vui lòng nhập số liên hệ khẩn cấp' }]}
-              >
+              <Form.Item name="phone" label="Só điện thoại">
                 <Input />
               </Form.Item>
             </Col>
           </Row>
 
-          <Form.Item
-            name="address"
-            label="Địa chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập địa chỉ' }]}
-          >
+          <Form.Item name="address" label="Địa chỉ">
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="bloodType"
-                label="Nhóm máu"
-                rules={[{ required: true, message: 'Vui lòng chọn nhóm máu' }]}
-              >
-                <Select>
-                  <Option value="A+">A+</Option>
-                  <Option value="A-">A-</Option>
-                  <Option value="B+">B+</Option>
-                  <Option value="B-">B-</Option>
-                  <Option value="AB+">AB+</Option>
-                  <Option value="AB-">AB-</Option>
-                  <Option value="O+">O+</Option>
-                  <Option value="O-">O-</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="doctor"
-                label="Bác sĩ phụ trách"
-                rules={[{ required: true, message: 'Vui lòng nhập tên bác sĩ' }]}
-              >
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item
-                name="status"
-                label="Trạng thái"
-                rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-              >
-                <Select>
-                  <Option value="healthy">Khỏe mạnh</Option>
-                  <Option value="monitoring">Theo dõi</Option>
-                  <Option value="critical">Khẩn cấp</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item
-                name="lastCheckup"
-                label="Lần khám cuối"
-              >
-                <DatePicker className="w-full" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="nextCheckup"
-                label="Lần khám tiếp theo"
-              >
-                <DatePicker className="w-full" format="DD/MM/YYYY" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item
-            name="medicalHistory"
-            label="Tiền sử bệnh"
-          >
-            <Input.TextArea rows={2} placeholder="VD: Tiểu đường, cao huyết áp..." />
-          </Form.Item>
-
-          <Form.Item
-            name="currentMedications"
-            label="Thuốc đang dùng"
-          >
-            <Input.TextArea rows={2} placeholder="VD: Metformin 500mg, Aspirin..." />
-          </Form.Item>
-
-          <Form.Item
-            name="allergies"
-            label="Dị ứng"
-          >
-            <Input placeholder="VD: Penicillin, hải sản..." />
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="Ghi chú"
-          >
-            <Input.TextArea rows={3} placeholder="Thông tin bổ sung..." />
+          <Form.Item name="note" label="Ghi chú">
+            <Input.TextArea rows={3} />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* Detail Modal */}
-      <ElderlyDetailModal
+      {/* 🟢 cập nhật: modal chi tiết Elder */}
+      <ElderDetailModal
         visible={isDetailModalVisible}
-        elderly={selectedElderly}
+        elderly={selectedElder}
         onClose={() => setIsDetailModalVisible(false)}
       />
     </div>

@@ -4,8 +4,15 @@ export class CreateElderDto {
   @IsNotEmpty()
   fullName: string;
 
+  @IsOptional()
   @IsDateString()
-  dob: Date;
+  dob?: string;
+  
+  @IsOptional()
+  age: number;
+  
+  @IsOptional()
+  phone?: string;
 
   @IsNotEmpty()
   gender: string;
@@ -15,6 +22,9 @@ export class CreateElderDto {
 
   @IsOptional()
   address?: string;
+
+  @IsOptional()
+  note?: string;
 
   @IsOptional()
   contactPhone?: string;

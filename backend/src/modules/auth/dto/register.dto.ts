@@ -1,17 +1,4 @@
 import { IsEmail, IsNotEmpty, MinLength, IsEnum, IsOptional, Matches } from 'class-validator';
-
-export class LoginDto {
-  @IsEmail({}, { message: 'Email không hợp lệ' })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  email: string;
-
-  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
-  @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
-  password: string;
-}
-
-// src/modules/auth/dto/register.dto.ts
-// removed duplicate import line
 import { UserRole } from '../../../entities/user.entity';
 
 export class RegisterDto {

@@ -142,7 +142,7 @@ const UpcomingAppointments: React.FC = () => {
                   <div className="space-y-1">
                     <div className="text-sm text-gray-600">
                       <UserOutlined className="mr-1" />
-                      {elderly?.name} - {caregiver?.name}
+                      {elderly?.fullName} - {caregiver?.name}
                     </div>
                     <div className="text-sm text-gray-500">
                       <ClockCircleOutlined className="mr-1" />

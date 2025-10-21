@@ -15,8 +15,11 @@ export class EldersService {
     private medicalHistoryRepository: Repository<MedicalHistory>,
   ) {}
 
-  async create(createElderDto: CreateElderDto): Promise<Elder> {
-    const elder = this.elderRepository.create(createElderDto);
+  async create(createElderDto: CreateElderDto, userId: number): Promise<Elder> {
+    const elder = this.elderRepository.create({
+    ...createElderDto,
+    userId, // ✅ thêm dòng này
+  });
     const savedElder = await this.elderRepository.save(elder);
 
     // Create medical history

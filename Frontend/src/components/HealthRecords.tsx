@@ -125,7 +125,7 @@ const HealthRecords: React.FC = () => {
       key: 'elderlyId',
       render: (elderlyId: string) => {
         const elderly = mockElderly.find(e => e.id === elderlyId);
-        return elderly ? elderly.name : 'Không xác định';
+        return elderly ? elderly.fullName : 'Không xác định';
       },
     },
     {
@@ -385,7 +385,7 @@ const HealthRecords: React.FC = () => {
                 <Select>
                   {mockElderly.map(elderly => (
                     <Option key={elderly.id} value={elderly.id}>
-                      {elderly.name} ({elderly.age} tuổi)
+                      {elderly.fullName} ({elderly.age} tuổi)
                     </Option>
                   ))}
                 </Select>
@@ -517,7 +517,7 @@ const HealthRecords: React.FC = () => {
               {new Date(selectedRecord.date).toLocaleDateString('vi-VN')}
             </Descriptions.Item>
             <Descriptions.Item label="Người cao tuổi">
-              {mockElderly.find(e => e.id === selectedRecord.elderlyId)?.name}
+              {mockElderly.find(e => e.id === selectedRecord.elderlyId)?.fullName}
             </Descriptions.Item>
             <Descriptions.Item label="Huyết áp">
               {selectedRecord.bloodPressure.systolic}/{selectedRecord.bloodPressure.diastolic} mmHg

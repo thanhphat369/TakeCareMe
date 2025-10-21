@@ -26,9 +26,11 @@ export const getApiBaseUrl = (): string => {
   return raw.replace(/\/$/, '');
 };
 
-// Auth API
+// Auth API - Kết nối Backend
 export async function loginUser(email: string, password: string): Promise<LoginResponse> {
   const base = getApiBaseUrl();
+  console.log('🔗 Kết nối tới Backend:', `${base}/api/auth/login`);
+  
   const response = await fetch(`${base}/api/auth/login`, {
     method: 'POST',
     headers: {
@@ -38,13 +40,17 @@ export async function loginUser(email: string, password: string): Promise<LoginR
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 
   const data = await response.json();
+  
+  // Lưu token và user data vào localStorage
   localStorage.setItem('accessToken', data.accessToken);
   localStorage.setItem('userData', JSON.stringify(data.user));
+  
+  console.log('✅ Đăng nhập thành công:', data.user);
   return data;
 }
 
@@ -94,14 +100,18 @@ export async function registerUser(userData: {
 
 export async function getProfile(accessToken?: string): Promise<User> {
   const base = getApiBaseUrl();
+  const token = accessToken || localStorage.getItem('accessToken') || '';
+  
+  console.log('🔗 Lấy profile từ Backend:', `${base}/api/auth/profile`);
+  
   const response = await fetch(`${base}/api/auth/profile`, {
     headers: {
-      'Authorization': `Bearer ${accessToken || localStorage.getItem('accessToken') || ''}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
+    const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 
@@ -128,6 +138,7 @@ export async function changePassword(oldPassword: string, newPassword: string, a
 }
 
 export async function logoutUser() {
+  console.log('🔓 Đăng xuất người dùng');
   localStorage.removeItem('accessToken');
   localStorage.removeItem('userData');
 }

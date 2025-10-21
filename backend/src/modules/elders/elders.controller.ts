@@ -5,7 +5,7 @@ import {
   Body, 
   Patch, 
   Param, 
-  Delete, 
+  Delete, Req,
   UseGuards 
 } from '@nestjs/common';
 import { EldersService } from './elders.service';
@@ -23,8 +23,10 @@ export class EldersController {
 
   @Post()
   @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR)
-  create(@Body() createElderDto: CreateElderDto) {
-    return this.eldersService.create(createElderDto);
+  create(@Body() createElderDto: CreateElderDto, @Req() req) {
+    const user = req.user; // ✅ Lấy user từ token JWT
+    console.log('👤 Người tạo Elder:', user);
+    return this.eldersService.create(createElderDto,user.userId);
   }
 
   @Get()
