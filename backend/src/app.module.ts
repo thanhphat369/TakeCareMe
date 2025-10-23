@@ -11,6 +11,7 @@ import { ShiftsModule } from './modules/shifts/shifts.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { MedicationsModule } from './modules/medications/medications.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     DevicesModule,
     PaymentsModule,
     DashboardModule,
+    MedicationsModule,
   ],
 })
 export class AppModule {}

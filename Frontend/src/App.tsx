@@ -19,6 +19,8 @@ import Login from './components/Login';
 import Register from './components/Register';
 import ElderlyManagement from './components/ElderlyManagement';
 import Calendar from './components/Calendar';
+import CareSchedules from './components/CareSchedules';
+import CareEvents from './components/CareEvents';
 import HealthRecords from './components/HealthRecords';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
@@ -91,6 +93,18 @@ const App: React.FC = () => {
         roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
       },
       {
+        key: 'care_schedules',
+        icon: <CalendarOutlined />,
+        label: 'Kế hoạch chăm sóc',
+        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
+      },
+      {
+        key: 'care_events',
+        icon: <CalendarOutlined />,
+        label: 'Nhật ký chăm sóc',
+        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
+      },
+      {
         key: 'health',
         icon: <HeartOutlined />,
         label: 'Theo dõi sức khỏe',
@@ -149,6 +163,10 @@ const App: React.FC = () => {
         return <StaffManagement />;
       case 'calendar':
         return <Calendar />;
+      case 'care_schedules':
+        return <CareSchedules />;
+      case 'care_events':
+        return <CareEvents />;
       case 'health':
         return <HealthRecords />;
       case 'vitals':

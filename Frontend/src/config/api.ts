@@ -17,10 +17,10 @@ export const API_ENDPOINTS = {
     SUMMARY: '/api/dashboard/summary',
   },
   ELDERS: {
-    LIST: '/elders',
-    CREATE: '/elders',
-    UPDATE: (id: string) => `/elders/${id}`,
-    DELETE: (id: string) => `/elders/${id}`,
+    LIST: '/api/elders',
+    CREATE: '/api/elders',
+    UPDATE: (id: string) => `/api/elders/${id}`,
+    DELETE: (id: string) => `/api/elders/${id}`,
   },
   VITALS: {
     LIST: '/vitals',
@@ -34,10 +34,10 @@ export const API_ENDPOINTS = {
     RESOLVE: (id: string) => `/alerts/${id}/resolve`,
   },
   MEDICATIONS: {
-    LIST: '/medications',
-    CREATE: '/medications',
-    UPDATE: (id: string) => `/medications/${id}`,
-    DELETE: (id: string) => `/medications/${id}`,
+    LIST: '/api/medications',
+    CREATE: '/api/medications',
+    UPDATE: (id: string) => `/api/medications/${id}`,
+    DELETE: (id: string) => `/api/medications/${id}`,
   },
   USERS: {
     LIST: '/users',

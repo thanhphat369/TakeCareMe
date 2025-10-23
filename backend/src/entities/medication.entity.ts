@@ -38,4 +38,7 @@ export class Medication {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'prescribed_by' })
   prescriber: User;
+
+  @Column({ type: 'nvarchar', length: 50, nullable: true })
+  time?: string;
 }

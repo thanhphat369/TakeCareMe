@@ -30,30 +30,30 @@ const Dashboard: React.FC = () => {
     [],
   );
 
-   useEffect(() => {
-    const fetchSummary = async () => {
-      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  //  useEffect(() => {
+  //   const fetchSummary = async () => {
+  //     const userData = JSON.parse(localStorage.getItem('userData') || '{}');
 
-      // ✅ Kiểm tra quyền trước khi gọi API
-      if (!['SuperAdmin', 'Admin', 'Doctor'].includes(userData.role)) {
-        setError('Bạn không có quyền truy cập Dashboard.');
-        setLoading(false);
-        return;
-      }
+  //     // ✅ Kiểm tra quyền trước khi gọi API
+  //     if (!['SuperAdmin', 'Admin', 'Doctor'].includes(userData.role)) {
+  //       setError('Bạn không có quyền truy cập Dashboard.');
+  //       setLoading(false);
+  //       return;
+  //     }
 
-      try {
-        setLoading(true);
-        const res = await getDashboardSummary();
-        setSummary(res);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //     try {
+  //       setLoading(true);
+  //       const res = await getDashboardSummary();
+  //       setSummary(res);
+  //     } catch (err: any) {
+  //       setError(err.message);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchSummary();
-  }, []);
+  //   fetchSummary();
+  // }, []);
 
   // Map API -> UI stats (fallback mock if API chưa sẵn sàng)
   const stats = useMemo(() => {

@@ -1,24 +1,5 @@
-// export interface Elderly {
-//   id: string;
-//   name: string;
-//   age: number;
-//   gender: 'male' | 'female';
-//   phone: string;
-//   address: string;
-//   emergencyContact: string;
-//   medicalHistory: string[];
-//   medications: Medication[];
-//   allergies: string[];
-//   bloodType: string;
-//   doctor: string;
-//   lastCheckup: Date;
-//   nextCheckup: Date;
-//   status: 'healthy' | 'monitoring' | 'critical';
-//   notes: string;
-//   createdAt: Date;
-//   updatedAt: Date;
-// }
 
+// Elderly Types
 export interface Elderly {
   id: string;
   fullName: string;

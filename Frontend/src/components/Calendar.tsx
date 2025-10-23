@@ -15,22 +15,7 @@ const Calendar: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form] = Form.useForm();
-
-  const events = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: appointment.title,
-      start: appointment.start,
-      end: appointment.end,
-      backgroundColor: getEventColor(appointment.type),
-      borderColor: getEventColor(appointment.type),
-      extendedProps: {
-        ...appointment,
-        elderly: mockElderly.find(e => e.id === appointment.elderlyId),
-        caregiver: mockCaregivers.find(c => c.id === appointment.caregiverId),
-      }
-    }));
-  }, [appointments]);
+  
 
   const getEventColor = (type: string) => {
     switch (type) {
@@ -79,6 +64,24 @@ const Calendar: React.FC = () => {
         return status;
     }
   };
+  
+  const events = useMemo(() => {
+    return appointments.map(appointment => ({
+      id: appointment.id,
+      title: appointment.title,
+      start: appointment.start,
+      end: appointment.end,
+      backgroundColor: getEventColor(appointment.type),
+      borderColor: getEventColor(appointment.type),
+      extendedProps: {
+        ...appointment,
+        elderly: mockElderly.find(e => e.id === appointment.elderlyId),
+        caregiver: mockCaregivers.find(c => c.id === appointment.caregiverId),
+      }
+    }));
+  }, [appointments]);
+
+  
 
   const handleDateSelect = (selectInfo: any) => {
     setEditingAppointment(null);

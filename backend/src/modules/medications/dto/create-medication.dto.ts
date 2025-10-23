@@ -27,6 +27,9 @@ export class CreateMedicationDto {
   @IsOptional()
   @IsNumber()
   prescribedBy?: number;
+
+  @IsOptional()
+  time?: string;
 }
 
 

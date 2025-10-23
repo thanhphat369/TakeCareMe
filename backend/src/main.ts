@@ -20,7 +20,6 @@ async function bootstrap() {
   // Cho phép Frontend (React chạy ở port 8080) gọi API đến Backend (port 3000)
   app.enableCors({
     origin: [
-      'http://localhost:5173', // Vite (React)
       'http://localhost:3000', // CRA
       'http://localhost:8080', // Nếu dùng cổng này
     ],
