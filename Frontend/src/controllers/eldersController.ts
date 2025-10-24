@@ -1,5 +1,5 @@
 import { Elderly } from '../types';
-import apiClient from '../config/api';
+import apiClient from '../api/apiClient';
 import dayjs from 'dayjs';
 
 /**

@@ -1,6 +1,8 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Elder } from './elder.entity';
 import { User } from './user.entity';
+import { Staff } from './staff.entity';
+import { Prescription } from './prescription.entity';
 
 @Entity('Medications')
 export class Medication {
@@ -23,10 +25,10 @@ export class Medication {
   @Column({ type: 'nvarchar', length: 50, nullable: true })
   frequency: string;
 
-  @Column({ name: 'start_date', type: 'date', nullable: true })
+  @Column({ name: 'start_date', nullable: true })
   startDate: Date;
 
-  @Column({ name: 'end_date', type: 'date', nullable: true })
+  @Column({ name: 'end_date', nullable: true })
   endDate: Date;
 
   @Column({ type: 'nvarchar', length: 255, nullable: true })
@@ -41,4 +43,18 @@ export class Medication {
 
   @Column({ type: 'nvarchar', length: 50, nullable: true })
   time?: string;
+
+  @Column({ name: 'staff_in_charge', nullable: true })
+  staffInCharge?: number;
+
+  @ManyToOne(() => Staff)
+  @JoinColumn({ name: 'staff_in_charge' })
+  staff?: Staff;
+
+  @Column({ name: 'prescription_id', nullable: true })
+  prescriptionId?: number;
+
+  @ManyToOne(() => Prescription, prescription => prescription.medications)
+  @JoinColumn({ name: 'prescription_id' })
+  prescription?: Prescription;
 }

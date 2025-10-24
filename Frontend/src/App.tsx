@@ -13,6 +13,8 @@ import {
   LogoutOutlined,
   FileTextOutlined,
   MobileOutlined,
+  SafetyCertificateOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -25,11 +27,14 @@ import HealthRecords from './components/HealthRecords';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import MedicationManagement from './components/MedicationManagement';
+import PrescriptionManagement from './components/PrescriptionManagement';
 import AlertsManagement from './components/AlertsManagement';
 import StaffManagement from './components/StaffManagement';
 import PaymentManagement from './components/PaymentManagement';
 import VitalSignsMonitor from './components/VitalSignsMonitor';
-// import ActivateAccount from './components/ActivateAccount';
+import UserManagementSystem from './components/UserManagementSystem';
+import BackendTest from './components/BackendTest';
+
 
 const { Header, Sider, Content } = Layout;
 
@@ -87,6 +92,12 @@ const App: React.FC = () => {
         roles: ['SuperAdmin', 'Admin']
       },
       {
+        key: 'users',
+        icon: <SafetyCertificateOutlined />,
+        label: 'Quản lý tài khoản',
+        roles: ['SuperAdmin', 'Admin']
+      },
+      {
         key: 'calendar',
         icon: <CalendarOutlined />,
         label: 'Lịch chăm sóc',
@@ -123,6 +134,12 @@ const App: React.FC = () => {
         roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
       },
       {
+        key: 'prescriptions',
+        icon: <FileTextOutlined />,
+        label: 'Đơn thuốc',
+        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
+      },
+      {
         key: 'alerts',
         icon: <BellOutlined />,
         label: 'Cảnh báo khẩn cấp',
@@ -146,6 +163,12 @@ const App: React.FC = () => {
         label: 'Cài đặt',
         roles: ['SuperAdmin', 'Admin']
       },
+      {
+        key: 'backend-test',
+        icon: <ReloadOutlined />,
+        label: 'Test Backend',
+        roles: ['SuperAdmin', 'Admin', 'Doctor']
+      },
     ];
 
     return baseItems.filter(item => item.roles.includes(userRole));
@@ -161,6 +184,8 @@ const App: React.FC = () => {
         return <ElderlyManagement />;
       case 'staff':
         return <StaffManagement />;
+      case 'users':
+        return <UserManagementSystem />;
       case 'calendar':
         return <Calendar />;
       case 'care_schedules':
@@ -173,6 +198,8 @@ const App: React.FC = () => {
         return <VitalSignsMonitor />;
       case 'medications':
         return <MedicationManagement />;
+      case 'prescriptions':
+        return <PrescriptionManagement />;
       case 'alerts':
         return <AlertsManagement />;
       case 'payments':
@@ -181,6 +208,8 @@ const App: React.FC = () => {
         return <Reports />;
       case 'settings':
         return <Settings />;
+      case 'backend-test':
+        return <BackendTest />;
       default:
         return <Dashboard />;
     }

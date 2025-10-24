@@ -28,7 +28,7 @@ export class User {
   @Column({ type: 'nvarchar', length: 30 })
   role: UserRole;
 
-  @Column({ type: 'varchar', length: 15, nullable: true })
+  @Column({ type: 'varchar', length: 15, unique: true, nullable: true })
   phone: string;
 
   @Column({ type: 'varchar', length: 100, unique: true, nullable: true, })

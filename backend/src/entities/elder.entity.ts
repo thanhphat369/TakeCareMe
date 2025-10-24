@@ -6,6 +6,7 @@ import { Medication } from './medication.entity';
 import { Alert } from './alert.entity';
 import { CareEvent } from './care-event.entity';
 import { Device } from './device.entity';
+import { Prescription } from './prescription.entity';
 
 @Entity('Elders')
 export class Elder {
@@ -73,4 +74,7 @@ export class Elder {
 
   @OneToMany(() => Device, device => device.elder)
   devices: Device[];
+
+  @OneToMany(() => Prescription, prescription => prescription.elder)
+  prescriptions: Prescription[];
 }

@@ -33,7 +33,6 @@ export class CreateStaffDto {
   @IsEnum(UserRole, { message: 'Vai trò không hợp lệ. Chỉ chấp nhận Doctor hoặc Staff' })
   role: UserRole.DOCTOR | UserRole.STAFF;
 
-  // Staff Specific Info
   @IsNotEmpty({ message: 'Chức danh không được để trống' })
   @MaxLength(50)
   roleTitle: string;

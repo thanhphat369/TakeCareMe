@@ -12,7 +12,9 @@ import { DevicesModule } from './modules/devices/devices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MedicationsModule } from './modules/medications/medications.module';
-
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { ProfilesModule } from './modules/profiles/profiles.module';
+import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,6 +51,9 @@ import { MedicationsModule } from './modules/medications/medications.module';
     PaymentsModule,
     DashboardModule,
     MedicationsModule,
+    AppointmentsModule,
+    ProfilesModule,
+    PrescriptionsModule,
   ],
 })
 export class AppModule {}

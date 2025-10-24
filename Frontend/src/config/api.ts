@@ -38,6 +38,14 @@ export const API_ENDPOINTS = {
     CREATE: '/api/medications',
     UPDATE: (id: string) => `/api/medications/${id}`,
     DELETE: (id: string) => `/api/medications/${id}`,
+    BY_ELDER: (elderId: number) => `/api/medications/elder/${elderId}`,
+  },
+  PRESCRIPTIONS: {
+    LIST: '/api/prescriptions',
+    CREATE: '/api/prescriptions',
+    UPDATE: (id: string) => `/api/prescriptions/${id}`,
+    DELETE: (id: string) => `/api/prescriptions/${id}`,
+    BY_ELDER: (elderId: number) => `/api/prescriptions/elder/${elderId}`,
   },
   USERS: {
     LIST: '/users',
@@ -45,6 +53,12 @@ export const API_ENDPOINTS = {
     CREATE: '/users',
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
+  },
+  STAFFS: {
+    LIST: '/staffs',
+    CREATE: '/api/staffs',
+    UPDATE: (id: string) => `/api/staffs/${id}`,
+    DELETE: (id: string) => `/api/staffs/${id}`,
   },
   PAYMENTS: {
     LIST: '/payments',

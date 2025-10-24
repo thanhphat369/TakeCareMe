@@ -20,6 +20,10 @@ export interface Staff {
 
 // ===== API Methods =====
 
+// 🔹 (Alias) Giữ tương thích cho PrescriptionManagement
+export async function getStaffs(): Promise<Staff[]> {
+  return getAllStaff();
+}
 //  Lấy danh sách nhân viên
 export async function getAllStaff(): Promise<Staff[]> {
   const res = await api.get('/api/staff');

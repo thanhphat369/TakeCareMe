@@ -15,11 +15,11 @@ export class CreateMedicationDto {
 
   @IsOptional()
   @IsDateString()
-  startDate?: Date;
+  startDate?: string;
 
   @IsOptional()
   @IsDateString()
-  endDate?: Date;
+  endDate?: string;
 
   @IsOptional()
   notes?: string;

@@ -793,7 +793,7 @@ const StaffManagement: React.FC = () => {
           <Form.Item name="education" label="Bằng cấp"><Input /></Form.Item>
           <Form.Item name="skills" label="Kỹ năng/Chuyên môn"><Input.TextArea rows={2} maxLength={255} showCount /></Form.Item>
           <Form.Item name="notes" label="Ghi chú"><Input.TextArea rows={2} /></Form.Item>
-          {!editingStaff && <Form.Item name="password" label="Mật khẩu" extra="Để trống = 123456"><Input.Password /></Form.Item>}
+          {!editingStaff && <Form.Item name="password" label="Mật khẩu" extra="Để trống = staff123"><Input.Password /></Form.Item>}
           <Space>
             <Button type="primary" htmlType="submit">{editingStaff ? "Cập nhật" : "Thêm mới"}</Button>
             <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>

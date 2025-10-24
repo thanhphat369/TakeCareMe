@@ -7,7 +7,7 @@ import { Medication } from '../types/Medication';
  */
 export async function fetchEldersController() {
   try {
-    const res = await apiClient.get(API_ENDPOINTS.ELDERS.LIST);
+    const res = await apiClient.get('/api/elders');
     const raw = res.data?.data || res.data || [];
 
     return raw.map((item: any) => ({
@@ -19,6 +19,7 @@ export async function fetchEldersController() {
       address: item.address || '',
       phone: item.phone || '',
       status: item.status || 'Active',
+      
     }));
   } catch (error: any) {
     console.error('❌ Lỗi khi load Elders:', error);
@@ -33,7 +34,7 @@ export async function fetchEldersController() {
  */
 export async function fetchMedications(): Promise<Medication[]> {
   try {
-    const res = await apiClient.get(API_ENDPOINTS.MEDICATIONS.LIST);
+    const res = await apiClient.get('/api/medications');
     const raw = res.data?.data || res.data || [];
 
     return raw.map((item: any): Medication => ({
@@ -49,19 +50,24 @@ export async function fetchMedications(): Promise<Medication[]> {
       prescribedBy: item.prescribedBy || item.prescribed_by || null,
       elder: item.elder
         ? {
-            elderId: item.elder.elderId || item.elder.elder_id,
-            fullName: item.elder.fullName || item.elder.full_name,
-            age: item.elder.age,
-            gender: item.elder.gender,
-            phone: item.elder.phone,
-          }
+          elderId: item.elder.elderId || item.elder.elder_id,
+          fullName: item.elder.fullName || item.elder.full_name,
+          age: item.elder.age,
+          gender: item.elder.gender,
+          phone: item.elder.phone,
+        }
         : undefined,
       prescriber: item.prescriber
-        ? {
-            userId: item.prescriber.userId || item.prescriber.user_id,
-            fullName: item.prescriber.fullName || item.prescriber.full_name,
-          }
-        : undefined,
+  ? {
+      userId: item.prescriber.userId || item.prescriber.user_id,
+      fullName: item.prescriber.fullName || item.prescriber.full_name || 'Bác sĩ không xác định',
+    }
+  : item.prescribedBy
+    ? {
+        userId: item.prescribedBy,
+        fullName: `Bác sĩ #${item.prescribedBy}`, // Hiển thị tạm nếu không có tên
+      }
+    : undefined,
     }));
   } catch (error: any) {
     console.error('❌ Lỗi khi load medications:', error);
@@ -73,15 +79,46 @@ export async function fetchMedications(): Promise<Medication[]> {
 
 /**
  * 🔹 Lấy danh sách thuốc theo người cao tuổi
- * (Filter từ tất cả medications vì backend không có endpoint riêng)
  */
 export async function fetchMedicationsByElder(
   elderId: number
 ): Promise<Medication[]> {
   try {
-    // Lấy tất cả medications và filter theo elderId ở frontend
-    const allMedications = await fetchMedications();
-    return allMedications.filter((med) => med.elderId === elderId);
+    const res = await apiClient.get(`/api/medications/elder/${elderId}`);
+    const raw = res.data?.data || res.data || [];
+
+    return raw.map((item: any): Medication => ({
+      medicationId: item.medicationId || item.medication_id,
+      elderId: item.elderId || item.elder_id,
+      name: item.name,
+      dose: item.dose || '',
+      frequency: item.frequency || '',
+      time: item.time || null,
+      startDate: item.startDate || item.start_date || null,
+      endDate: item.endDate || item.end_date || null,
+      notes: item.notes || '',
+      prescribedBy: item.prescribedBy || item.prescribed_by || null,
+      elder: item.elder
+        ? {
+          elderId: item.elder.elderId || item.elder.elder_id,
+          fullName: item.elder.fullName || item.elder.full_name,
+          age: item.elder.age,
+          gender: item.elder.gender,
+          phone: item.elder.phone,
+        }
+        : undefined,
+      prescriber: item.prescriber
+  ? {
+      userId: item.prescriber.userId || item.prescriber.user_id,
+      fullName: item.prescriber.fullName || item.prescriber.full_name || 'Bác sĩ không xác định',
+    }
+  : item.prescribedBy
+    ? {
+        userId: item.prescribedBy,
+        fullName: `Bác sĩ #${item.prescribedBy}`, // Hiển thị tạm nếu không có tên
+      }
+    : undefined,
+    }));
   } catch (error: any) {
     console.error('❌ Lỗi khi load medications by elder:', error);
     throw new Error(
@@ -105,12 +142,22 @@ export async function fetchMedicationDetail(id: number): Promise<Medication> {
       dose: item.dose || '',
       frequency: item.frequency || '',
       time: item.time || null,
-      startDate: item.startDate || item.start_date || null, 
+      startDate: item.startDate || item.start_date || null,
       endDate: item.endDate || item.end_date || null,
       notes: item.notes || '',
       prescribedBy: item.prescribedBy || item.prescribed_by || null,
       elder: item.elder,
-      prescriber: item.prescriber,
+      prescriber: item.prescriber
+  ? {
+      userId: item.prescriber.userId || item.prescriber.user_id,
+      fullName: item.prescriber.fullName || item.prescriber.full_name || 'Bác sĩ không xác định',
+    }
+  : item.prescribedBy
+    ? {
+        userId: item.prescribedBy,
+        fullName: `Bác sĩ #${item.prescribedBy}`, // Hiển thị tạm nếu không có tên
+      }
+    : undefined,
     };
   } catch (error: any) {
     console.error('❌ Lỗi khi load medication detail:', error);
@@ -123,9 +170,7 @@ export async function fetchMedicationDetail(id: number): Promise<Medication> {
 /**
  * 🔹 Thêm thuốc mới
  */
-export async function createMedication(
-  values: Partial<Medication>
-): Promise<Medication> {
+export async function createMedication( values: Partial<Medication> ): Promise<Medication> {
   try {
     const payload = {
       elderId: Number(values.elderId), // Đảm bảo là number
@@ -133,7 +178,7 @@ export async function createMedication(
       dose: values.dose || undefined,
       frequency: values.frequency || undefined,
       time: values.time || undefined,
-      startDate: values.startDate ? dayjs(values.startDate).format('YYYY-MM-DD')  : null,
+      startDate: values.startDate ? dayjs(values.startDate).format('YYYY-MM-DD') : null,
       endDate: values.endDate ? dayjs(values.endDate).format('YYYY-MM-DD') : null,
       notes: values.notes || undefined,
       prescribedBy: values.prescribedBy ? Number(values.prescribedBy) : undefined,
@@ -141,16 +186,17 @@ export async function createMedication(
 
     console.log('📤 Sending medication payload:', payload);
 
-    const res = await apiClient.post(API_ENDPOINTS.MEDICATIONS.CREATE, payload);
+    const res = await apiClient.post('/api/medications', payload);
     return res.data?.data || res.data;
+
   } catch (error: any) {
     console.error('❌ Lỗi khi tạo medication:', error);
     console.error('❌ Error response:', error.response?.data);
-    throw new Error(
-      error.response?.data?.message || 'Không thể thêm thuốc mới'
-    );
+    throw new Error( error.response?.data?.message || 'Không thể thêm thuốc mới' );
   }
 }
+
+
 
 /**
  * 🔹 Cập nhật thuốc
@@ -166,22 +212,15 @@ export async function updateMedication(
       dose: values.dose || undefined,
       frequency: values.frequency || undefined,
       time: values.time || undefined,
-        startDate: values.startDate
-    ? dayjs(values.startDate).format('YYYY-MM-DD') // ✅ đúng định dạng ISO
-    : null,
-  endDate: values.endDate
-    ? dayjs(values.endDate).format('YYYY-MM-DD')
-    : null,
+      startDate: values.startDate ? dayjs(values.startDate).format('YYYY-MM-DD') : null,
+      endDate: values.endDate ? dayjs(values.endDate).format('YYYY-MM-DD') : null,
       notes: values.notes || undefined,
       prescribedBy: values.prescribedBy ? Number(values.prescribedBy) : undefined,
     };
 
     console.log('📤 Updating medication payload:', payload);
 
-    const res = await apiClient.put(
-      API_ENDPOINTS.MEDICATIONS.UPDATE(String(id)),
-      payload
-    );
+    const res = await apiClient.put(`/api/medications/${id}`, payload);
     return res.data?.data || res.data;
   } catch (error: any) {
     console.error('❌ Lỗi khi cập nhật medication:', error);
@@ -197,7 +236,7 @@ export async function updateMedication(
  */
 export async function deleteMedication(id: number): Promise<void> {
   try {
-    await apiClient.delete(API_ENDPOINTS.MEDICATIONS.DELETE(String(id)));
+    await apiClient.delete(`/api/medications/${id}`);
   } catch (error: any) {
     console.error('❌ Lỗi khi xóa medication:', error);
     throw new Error(error.response?.data?.message || 'Không thể xóa thuốc');

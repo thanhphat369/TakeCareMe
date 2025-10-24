@@ -11,14 +11,14 @@ export const mockElderly: Elderly[] = [
     emergencyContact: '0907654321',
     medicalHistory: ['Cao huyết áp', 'Tiểu đường'],
     medications: [
-      {
-        id: 'med1',
-        name: 'Metformin',
-        dosage: '500mg',
-        frequency: '2 lần/ngày',
-        startDate: new Date('2023-01-01'),
-        notes: 'Uống sau bữa ăn'
-      }
+      // {
+      //   id: 'med1',
+      //   name: 'Metformin',
+      //   dosage: '500mg',
+      //   frequency: '2 lần/ngày',
+      //   startDate: ,
+      //   notes: 'Uống sau bữa ăn'
+      // }
     ],
     allergies: ['Penicillin'],
     bloodType: 'A+',
@@ -40,14 +40,14 @@ export const mockElderly: Elderly[] = [
     emergencyContact: '0908765432',
     medicalHistory: ['Alzheimer', 'Loãng xương'],
     medications: [
-      {
-        id: 'med2',
-        name: 'Donepezil',
-        dosage: '5mg',
-        frequency: '1 lần/ngày',
-        startDate: new Date('2023-02-01'),
-        notes: 'Uống vào buổi tối'
-      }
+      // {
+      //   id: 'med2',
+      //   name: 'Donepezil',
+      //   dosage: '5mg',
+      //   frequency: '1 lần/ngày',
+      //   startDate: new Date('2023-02-01'),
+      //   notes: 'Uống vào buổi tối'
+      // }
     ],
     allergies: [],
     bloodType: 'O+',
@@ -69,14 +69,14 @@ export const mockElderly: Elderly[] = [
     emergencyContact: '0909876543',
     medicalHistory: ['Tim mạch'],
     medications: [
-      {
-        id: 'med3',
-        name: 'Aspirin',
-        dosage: '100mg',
-        frequency: '1 lần/ngày',
-        startDate: new Date('2023-03-01'),
-        notes: 'Uống sau bữa sáng'
-      }
+      // {
+      //   id: 'med3',
+      //   name: 'Aspirin',
+      //   dosage: '100mg',
+      //   frequency: '1 lần/ngày',
+      //   startDate: new Date('2023-03-01'),
+      //   notes: 'Uống sau bữa sáng'
+      // }
     ],
     allergies: ['Aspirin'],
     bloodType: 'B+',

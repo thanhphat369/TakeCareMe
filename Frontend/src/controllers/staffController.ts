@@ -1,5 +1,5 @@
 import { Staff } from '../types';
-import apiClient from '../config/api';
+import apiClient from '../api/apiClient';
 
 export async function fetchStaffController() {
   const res = await apiClient.get('/api/staff', { params: { page: 1, limit: 50 } });
@@ -46,7 +46,7 @@ export async function createStaffController(values: any) {
     skills: values.skills || null,
     notes: values.notes || null,
     status: values.status || 'Active',
-    password: values.password || '123456',
+    password: values.password || 'staff123',
   };
   const res = await apiClient.post('/api/staff', payload);
   return res.data;
