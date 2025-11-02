@@ -87,11 +87,21 @@ export async function deleteElderController(id: string) {
 }
 
 /**
+ * 🔹 Lấy hồ sơ y tế Elder (medical-history)
+ */
+export const fetchMedicalHistoryController = async (elderId: number) => {
+  const res = await apiClient.get(`/api/medical-history/${elderId}`);
+  return res.data;
+};
+
+/**
  * 🔹 Cập nhật hồ sơ y tế Elder (medical-history)
  */
-export async function updateMedicalHistoryController(id: string, data: any) {
-  const res = await apiClient.patch(`/api/elders/${id}/medical-history`, data);
+export const updateMedicalHistoryController = async (elderId: number, data: any) => {
+  const res = await apiClient.put(`/api/medical-history/${elderId}`, data);
   return res.data;
-}
+};
+
+
 
 

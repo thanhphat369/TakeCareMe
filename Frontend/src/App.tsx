@@ -33,7 +33,6 @@ import StaffManagement from './components/StaffManagement';
 import PaymentManagement from './components/PaymentManagement';
 import VitalSignsMonitor from './components/VitalSignsMonitor';
 import UserManagementSystem from './components/UserManagementSystem';
-import BackendTest from './components/BackendTest';
 
 
 const { Header, Sider, Content } = Layout;
@@ -163,12 +162,6 @@ const App: React.FC = () => {
         label: 'Cài đặt',
         roles: ['SuperAdmin', 'Admin']
       },
-      {
-        key: 'backend-test',
-        icon: <ReloadOutlined />,
-        label: 'Test Backend',
-        roles: ['SuperAdmin', 'Admin', 'Doctor']
-      },
     ];
 
     return baseItems.filter(item => item.roles.includes(userRole));
@@ -208,8 +201,6 @@ const App: React.FC = () => {
         return <Reports />;
       case 'settings':
         return <Settings />;
-      case 'backend-test':
-        return <BackendTest />;
       default:
         return <Dashboard />;
     }
@@ -237,16 +228,6 @@ const App: React.FC = () => {
   ];
 
   if (!authed) {
-  //   if (showActivate) {
-  //   return (
-  //     <ActivateAccount
-  //       onActivated={() => {
-  //         setShowActivate(false);
-  //       }}
-  //       onBackToLogin={() => setShowActivate(false)}
-  //     />
-  //   );
-  // }
     if (showRegister) {
       return (
         <Register 

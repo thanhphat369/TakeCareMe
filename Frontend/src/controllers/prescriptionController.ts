@@ -228,4 +228,3 @@ export async function deletePrescription(id: number): Promise<void> {
     throw new Error(error.response?.data?.message || 'Không thể xóa đơn thuốc');
   }
 }
-

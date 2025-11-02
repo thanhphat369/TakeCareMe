@@ -6,8 +6,22 @@ import { Medication } from './medication.entity';
 import { Alert } from './alert.entity';
 import { CareEvent } from './care-event.entity';
 import { Device } from './device.entity';
-import { Prescription } from './prescription.entity';
+import { FamilyElder } from './family-elder.entity';
+// Thêm/đồng bộ enum
+export enum UserRole {
+  SUPERADMIN = 'SuperAdmin',
+  ADMIN = 'Admin',
+  DOCTOR = 'Doctor',
+  STAFF = 'Staff',
+  FAMILY = 'Family',   // <-- dùng tên này
+  ELDER = 'Elder',
+}
 
+export enum UserStatus {
+  ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
+  BANNED = 'Banned',
+}
 @Entity('Elders')
 export class Elder {
   @PrimaryGeneratedColumn({ name: 'elder_id' })
@@ -75,6 +89,10 @@ export class Elder {
   @OneToMany(() => Device, device => device.elder)
   devices: Device[];
 
-  @OneToMany(() => Prescription, prescription => prescription.elder)
-  prescriptions: Prescription[];
+  @OneToMany(() => FamilyElder, fe => fe.elder)
+  familyLinks: FamilyElder[];
+
+
+  // @OneToMany(() => Prescription, prescription => prescription.elder)
+  // prescriptions: Prescription[];
 }

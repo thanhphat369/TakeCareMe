@@ -1,10 +1,12 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsDateString,IsString, IsNumber } from 'class-validator';
 
 export class CreateMedicationDto {
   @IsNumber()
+  @IsNotEmpty()
   elderId: number;
 
   @IsNotEmpty()
+  @IsString()
   name: string;
 
   @IsOptional()
@@ -12,6 +14,9 @@ export class CreateMedicationDto {
 
   @IsOptional()
   frequency?: string;
+
+  @IsOptional()
+  time?: string;
 
   @IsOptional()
   @IsDateString()
@@ -22,14 +27,14 @@ export class CreateMedicationDto {
   endDate?: string;
 
   @IsOptional()
+  @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsString()
+  diagnosis: string;
 
   @IsOptional()
   @IsNumber()
   prescribedBy?: number;
-
-  @IsOptional()
-  time?: string;
 }
-
-

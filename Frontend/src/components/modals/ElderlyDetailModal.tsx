@@ -16,13 +16,16 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { Elderly, FamilyMember, CreateFamilyMemberRequest, UpdateFamilyMemberRequest } from '../../types';
-import { updateElderController, updateMedicalHistoryController } from '../../controllers/eldersController';
+import { updateElderController, updateMedicalHistoryController, fetchMedicalHistoryController } from '../../controllers/eldersController';
 import { getFamilyMembers, createFamilyMember, updateFamilyMember, deleteFamilyMember } from '../../api/familyMembers';
 import { fetchMedicationsByElder } from '../../controllers/medicationController';
 import FamilyMemberList from '../FamilyMemberList';
 import FamilyMemberModal from './FamilyMemberModal';
 import dayjs from 'dayjs';
 import { Medication } from '../../types/Medication';
+import { PrescriptionSummary } from '../../types/Medication';
+
+
 
 interface ElderlyDetailModalProps {
   visible: boolean;
@@ -42,7 +45,7 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
   const [historyForm] = Form.useForm();
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const [uploading, setUploading] = useState(false);
-  
+
   // Family member states
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
   const [familyMemberModalVisible, setFamilyMemberModalVisible] = useState(false);
@@ -52,20 +55,63 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
   // Medication states
   const [medications, setMedications] = useState<Medication[]>([]);
   const [medicationsLoading, setMedicationsLoading] = useState(false);
+  const [prescriptionList, setPrescriptionList] = useState<PrescriptionSummary[]>([]);
+
+  // Medical history state
+  const [medicalHistoryData, setMedicalHistoryData] = useState<any>(null);
+  const [medicalHistoryLoading, setMedicalHistoryLoading] = useState(false);
 
   // Load family members and medications when modal opens
   useEffect(() => {
     if (visible && elderly) {
       loadFamilyMembers();
       loadMedications();
+      loadMedicalHistory();
       // Set avatar URL when elderly data loads
       setAvatarUrl((elderly as any).avatar || '');
     }
-  }, [visible, elderly]);
+  }, [visible, elderly,]);
+
+  useEffect(() => {
+    // ✅ Kiểm tra kỹ để tránh lỗi undefined
+    if (!elderly?.id) return;
+    loadPrescriptionsByElder(Number(elderly.id));
+  }, [elderly]);
+
+  const loadPrescriptionsByElder = async (elderId: number) => {
+    try {
+      setMedicationsLoading(true);
+      const meds = await fetchMedicationsByElder(elderId);
+
+      // ✅ Gom thuốc theo toa (PrescriptionSummary)
+      const grouped: Record<string, PrescriptionSummary> = {};
+      meds.forEach((med) => {
+        const key = `${elderId}-${med.diagnosis || 'nodx'}-${med.prescribedBy || 'nodoctor'}`;
+        if (!grouped[key]) {
+          grouped[key] = {
+            elderId,
+            elderName: med.elder?.fullName || 'Không rõ',
+            diagnosis: med.diagnosis || 'Không có chẩn đoán',
+            prescribedBy: med.prescriber?.fullName || 'Không rõ',
+            startDate: med.startDate,
+            endDate: med.endDate,
+            medications: [],
+          };
+        }
+        grouped[key].medications.push(med);
+      });
+
+      setPrescriptionList(Object.values(grouped));
+    } catch (err: any) {
+      message.error('Không thể tải danh sách toa thuốc');
+    } finally {
+      setMedicationsLoading(false);
+    }
+  };
 
   const loadFamilyMembers = async () => {
     if (!elderly) return;
-    
+
     try {
       setFamilyMembersLoading(true);
       const members = await getFamilyMembers(elderly.id);
@@ -79,7 +125,7 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
 
   const loadMedications = async () => {
     if (!elderly) return;
-    
+
     try {
       setMedicationsLoading(true);
       const meds = await fetchMedicationsByElder(Number(elderly.id));
@@ -91,6 +137,45 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
     } finally {
       setMedicationsLoading(false);
     }
+  };
+
+  const loadMedicalHistory = async () => {
+    if (!elderly?.id) return;
+
+    try {
+      setMedicalHistoryLoading(true);
+      const data = await fetchMedicalHistoryController(Number(elderly.id));
+      // Backend returns null if no medical history exists
+      setMedicalHistoryData(data || null);
+    } catch (error: any) {
+      // If no medical history exists yet, that's okay - user can create one
+      if (error.response?.status !== 404 && error.response?.status !== 500) {
+        console.error('Error loading medical history:', error);
+      }
+      setMedicalHistoryData(null);
+    } finally {
+      setMedicalHistoryLoading(false);
+    }
+  };
+
+  // Helper function to parse string to array (for display)
+  const parseMedicalHistoryString = (str: string | null | undefined): string[] => {
+    if (!str) return [];
+    try {
+      // Try parsing as JSON first
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      // If not JSON, split by comma or semicolon
+      return str.split(/[,;]/).map(s => s.trim()).filter(s => s.length > 0);
+    }
+  };
+
+  // Helper function to convert array to string (for backend)
+  const arrayToMedicalHistoryString = (arr: string[] | undefined): string | undefined => {
+    if (!arr || arr.length === 0) return undefined;
+    // Store as JSON string for consistency
+    return JSON.stringify(arr);
   };
 
   const handleAddFamilyMember = () => {
@@ -109,7 +194,7 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
     try {
       if (selectedFamilyMember) {
         // Update existing family member
-        await updateFamilyMember(elderly.id, selectedFamilyMember.id, data as UpdateFamilyMemberRequest);
+        await updateFamilyMember(selectedFamilyMember.id, data as UpdateFamilyMemberRequest);
       } else {
         // Create new family member
         await createFamilyMember(elderly.id, data as CreateFamilyMemberRequest);
@@ -122,7 +207,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
 
   const handleDeleteFamilyMember = async (id: string) => {
     if (!elderly) return;
-    await deleteFamilyMember(elderly.id, id);
+    // API expects (familyId, elderId)
+    await deleteFamilyMember(id, elderly.id);
     await loadFamilyMembers();
   };
 
@@ -133,15 +219,15 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
       // Create FormData for file upload
       const formData = new FormData();
       formData.append('avatar', file);
-      
+
       // Here you would typically call your upload API
       // For now, we'll create a local URL for preview
       const url = URL.createObjectURL(file);
       setAvatarUrl(url);
-      
+
       // Update form with new avatar URL
       basicForm.setFieldsValue({ avatar: url });
-      
+
       message.success('Tải lên hình ảnh thành công');
     } catch (error) {
       message.error('Tải lên hình ảnh thất bại');
@@ -204,11 +290,22 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
         avatar: avatarUrl || (elderly as any).avatar,
       });
     } else if (tab === 'medical') {
+      // Use medicalHistoryData from backend if available, otherwise fallback to elderly data
+      const diagnoses = medicalHistoryData?.diagnoses 
+        ? parseMedicalHistoryString(medicalHistoryData.diagnoses)
+        : (elderly.medicalHistory || []);
+      const allergies = medicalHistoryData?.allergies
+        ? parseMedicalHistoryString(medicalHistoryData.allergies)
+        : (elderly.allergies || []);
+      const chronicMedications = medicalHistoryData?.chronicMedications
+        ? parseMedicalHistoryString(medicalHistoryData.chronicMedications)
+        : [];
+      
       medicalForm.setFieldsValue({
-        medicalHistory: elderly.medicalHistory || [],
-        allergies: elderly.allergies || [],
-        medications: elderly.medications || [],
-        bmi: (elderly as any).bmi,
+        diagnoses: diagnoses,
+        allergies: allergies,
+        chronicMedications: chronicMedications,
+        bmi: medicalHistoryData?.bmi || (elderly as any).bmi,
       });
     } else if (tab === 'nutrition') {
       nutritionForm.setFieldsValue({
@@ -248,8 +345,17 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
         message.success('Cập nhật thông tin cơ bản thành công');
       } else if (tab === 'medical') {
         const values = await medicalForm.validateFields();
-        await updateMedicalHistoryController(elderly.id, values);
-        message.success('Cập nhật hồ sơ y tế thành công');
+        // Convert arrays to strings for backend
+        const payload = {
+    diagnoses: arrayToMedicalHistoryString(values.medicalHistory),
+    allergies: arrayToMedicalHistoryString(values.allergies),
+    chronicMedications: arrayToMedicalHistoryString(values.chronicMedications),
+    bmi: values.bmi ?? null,
+  };
+        await updateMedicalHistoryController(Number(elderly.id), payload);
+  message.success('Cập nhật hồ sơ y tế thành công');
+        // Reload medical history after update
+        await loadMedicalHistory();
       } else if (tab === 'nutrition') {
         const values = await nutritionForm.validateFields();
         // TODO: Implement nutrition/exercise/mobility update endpoint
@@ -287,8 +393,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
             label: 'Hồ sơ cơ bản',
             children: (
               <div className="space-y-6">
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Thông tin cơ bản"
                   extra={
                     editingTab !== 'basic' ? (
@@ -297,15 +403,15 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                       </Button>
                     ) : (
                       <div className="space-x-2">
-                        <Button 
-                          type="primary" 
-                          icon={<SaveOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
                           onClick={() => handleSave('basic')}
                         >
                           Lưu
                         </Button>
-                        <Button 
-                          icon={<CloseOutlined />} 
+                        <Button
+                          icon={<CloseOutlined />}
                           onClick={() => handleCancel('basic')}
                         >
                           Hủy
@@ -321,8 +427,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                         <Col span={24}>
                           <Form.Item label="Hình ảnh cá nhân">
                             <div className="flex items-center space-x-4">
-                              <Avatar 
-                                size={80} 
+                              <Avatar
+                                size={80}
                                 src={avatarUrl}
                                 icon={<UserOutlined />}
                               >
@@ -339,14 +445,14 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                                       message.error('Chỉ được tải lên file hình ảnh!');
                                       return false;
                                     }
-                                    
+
                                     // Validate file size (max 2MB)
                                     const isLt2M = file.size / 1024 / 1024 < 2;
                                     if (!isLt2M) {
                                       message.error('Hình ảnh phải nhỏ hơn 2MB!');
                                       return false;
                                     }
-                                    
+
                                     handleAvatarUpload(file);
                                     return false; // Prevent default upload
                                   }}
@@ -356,9 +462,9 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                                   </Button>
                                 </Upload>
                                 {avatarUrl && (
-                                  <Button 
-                                    type="text" 
-                                    danger 
+                                  <Button
+                                    type="text"
+                                    danger
                                     onClick={handleAvatarRemove}
                                     className="ml-2"
                                   >
@@ -373,7 +479,7 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                           </Form.Item>
                         </Col>
                       </Row>
-                      
+
                       <Row gutter={16}>
                         <Col span={12}>
                           <Form.Item name="fullName" label="Họ và tên" rules={[{ required: true }]}>
@@ -459,7 +565,7 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                         value={getStatusText(elderly.status)}
                         valueStyle={{
                           color: getStatusColor(elderly.status) === 'green' ? '#10b981' :
-                                 getStatusColor(elderly.status) === 'orange' ? '#f59e0b' : '#ef4444'
+                            getStatusColor(elderly.status) === 'orange' ? '#f59e0b' : '#ef4444'
                         }}
                       />
                     </Col>
@@ -473,8 +579,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
             label: 'Hồ sơ y tế',
             children: (
               <div className="space-y-6">
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Thông tin y tế"
                   extra={
                     editingTab !== 'medical' ? (
@@ -483,15 +589,15 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                       </Button>
                     ) : (
                       <div className="space-x-2">
-                        <Button 
-                          type="primary" 
-                          icon={<SaveOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
                           onClick={() => handleSave('medical')}
                         >
                           Lưu
                         </Button>
-                        <Button 
-                          icon={<CloseOutlined />} 
+                        <Button
+                          icon={<CloseOutlined />}
                           onClick={() => handleCancel('medical')}
                         >
                           Hủy
@@ -500,110 +606,141 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     )
                   }
                 >
-                  {editingTab === 'medical' ? (
+                  {medicalHistoryLoading ? (
+                    <div className="text-center text-gray-500 py-3">Đang tải thông tin y tế...</div>
+                  ) : editingTab === 'medical' ? (
                     <Form form={medicalForm} layout="vertical">
                       <Row gutter={16}>
                         <Col span={12}>
-                          <Form.Item name="medicalHistory" label="Bệnh lý nền">
-                            <Select mode="tags" placeholder="Nhập bệnh lý nền">
-                              {(elderly.medicalHistory || []).map((condition, index) => (
-                                <Select.Option key={index} value={condition}>{condition}</Select.Option>
-                              ))}
+                          <Form.Item name="diagnoses" label="Bệnh lý nền">
+                            <Select mode="tags" placeholder="Nhập bệnh lý nền (Enter để thêm)">
                             </Select>
                           </Form.Item>
                         </Col>
                         <Col span={12}>
                           <Form.Item name="allergies" label="Dị ứng">
-                            <Select mode="tags" placeholder="Nhập dị ứng">
-                              {(elderly.allergies || []).map((allergy, index) => (
-                                <Select.Option key={index} value={allergy}>{allergy}</Select.Option>
-                              ))}
+                            <Select mode="tags" placeholder="Nhập dị ứng (Enter để thêm)">
                             </Select>
                           </Form.Item>
                         </Col>
                       </Row>
-                      <Form.Item name="bmi" label="Chỉ số BMI">
-                        <InputNumber min={10} max={50} step={0.1} className="w-full" placeholder="Nhập BMI" />
-                      </Form.Item>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item name="chronicMedications" label="Thuốc điều trị mãn tính">
+                            <Select mode="tags" placeholder="Nhập thuốc (Enter để thêm)">
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item name="bmi" label="Chỉ số BMI">
+                            <InputNumber min={10} max={50} step={0.1} className="w-full" placeholder="Nhập BMI" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
                     </Form>
                   ) : (
                     <Row gutter={16}>
-                      <Col span={12}>
+                      <Col span={8}>
                         <h4 className="font-medium mb-2">Bệnh lý nền</h4>
                         <div className="space-y-1">
-                          {elderly.medicalHistory?.length ? (
-                            elderly.medicalHistory.map((condition, index) => (
-                              <Tag key={index} color="red" className="mr-1 mb-1">{condition}</Tag>
-                            ))
-                          ) : (
-                            <span className="text-gray-500">Không có</span>
-                          )}
+                          {(() => {
+                            const diagnoses = medicalHistoryData?.diagnoses 
+                              ? parseMedicalHistoryString(medicalHistoryData.diagnoses)
+                              : (elderly.medicalHistory || []);
+                            return diagnoses.length ? (
+                              diagnoses.map((condition, index) => (
+                                <Tag key={index} color="red" className="mr-1 mb-1">{condition}</Tag>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">Không có</span>
+                            );
+                          })()}
                         </div>
                       </Col>
-                      <Col span={12}>
+                      <Col span={8}>
                         <h4 className="font-medium mb-2">Dị ứng</h4>
                         <div className="space-y-1">
-                          {elderly.allergies?.length ? (
-                            elderly.allergies.map((allergy, index) => (
-                              <Tag key={index} color="orange" className="mr-1 mb-1">{allergy}</Tag>
-                            ))
-                          ) : (
-                            <span className="text-gray-500">Không có</span>
-                          )}
+                          {(() => {
+                            const allergies = medicalHistoryData?.allergies
+                              ? parseMedicalHistoryString(medicalHistoryData.allergies)
+                              : (elderly.allergies || []);
+                            return allergies.length ? (
+                              allergies.map((allergy, index) => (
+                                <Tag key={index} color="orange" className="mr-1 mb-1">{allergy}</Tag>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">Không có</span>
+                            );
+                          })()}
                         </div>
+                      </Col>
+                      <Col span={8}>
+                        <h4 className="font-medium mb-2">Thuốc điều trị mãn tính</h4>
+                        <div className="space-y-1">
+                          {(() => {
+                            const medications = medicalHistoryData?.chronicMedications
+                              ? parseMedicalHistoryString(medicalHistoryData.chronicMedications)
+                              : [];
+                            return medications.length ? (
+                              medications.map((med, index) => (
+                                <Tag key={index} color="blue" className="mr-1 mb-1">{med}</Tag>
+                              ))
+                            ) : (
+                              <span className="text-gray-500">Không có</span>
+                            );
+                          })()}
+                        </div>
+                        {medicalHistoryData?.bmi && (
+                          <div className="mt-2">
+                            <h4 className="font-medium mb-1">BMI</h4>
+                            <Tag color="green">{medicalHistoryData.bmi}</Tag>
+                          </div>
+                        )}
                       </Col>
                     </Row>
                   )}
                 </Card>
-                <Card size="small" title="Thuốc đang dùng">
+                <Card size="small" title="Toa thuốc">
                   {medicationsLoading ? (
-                    <div className="text-center text-gray-500 py-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                      Đang tải danh sách thuốc...
-                    </div>
-                  ) : medications?.length ? (
-                    <div className="space-y-3">
-                      {medications.map((medication) => (
-                        <div key={medication.medicationId} className="border rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className="font-medium text-blue-600">{medication.name}</h5>
-                            <Tag color="blue">{medication.dose}</Tag>
+                    <div className="text-center text-gray-500 py-3">Đang tải danh sách toa thuốc...</div>
+                  ) : prescriptionList.length > 0 ? (
+                    <div className="space-y-4">
+                      {prescriptionList.map((p) => (
+                        <div
+                          key={`${p.elderId}-${p.diagnosis}-${p.prescribedBy}`}
+                          className="border rounded-lg p-3 bg-white shadow-sm"
+                        >
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-semibold text-blue-600">{p.diagnosis}</h4>
+                            <Tag color="green">{p.prescribedBy}</Tag>
                           </div>
-                          <div className="text-sm text-gray-600 space-y-1">
-                            <div>
-                              <MedicineBoxOutlined className="mr-1" />Tần suất: {medication.frequency}
-                            </div>
-                            {medication.time && (
-                              <div>
-                                <CalendarOutlined className="mr-1" />Thời gian: {medication.time}
+
+                          <div className="text-sm text-gray-600 mb-2">
+                            <CalendarOutlined className="mr-1" /> {dayjs(p.startDate).format('DD/MM/YYYY')} →{' '}
+                            {p.endDate ? dayjs(p.endDate).format('DD/MM/YYYY') : 'Chưa kết thúc'}
+                          </div>
+
+                          <div className="space-y-2 border-t pt-2">
+                            {p.medications.map((m) => (
+                              <div key={m.medicationId} className="p-2 rounded bg-gray-50 hover:bg-gray-100 transition">
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-gray-800">{m.name}</span>
+                                  <Tag color="blue">{m.dose}</Tag>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  <MedicineBoxOutlined className="mr-1" /> {m.frequency} | {m.time || 'Không rõ'}
+                                </div>
                               </div>
-                            )}
-                            {medication.startDate && (
-                              <div>
-                                <CalendarOutlined className="mr-1" />Bắt đầu: {dayjs(medication.startDate).format('DD/MM/YYYY')}
-                              </div>
-                            )}
-                            {medication.endDate && (
-                              <div>
-                                <CalendarOutlined className="mr-1" />Kết thúc: {dayjs(medication.endDate).format('DD/MM/YYYY')}
-                              </div>
-                            )}
-                            {medication.prescribedBy && (
-                              <div>
-                                <UserOutlined className="mr-1" />Kê bởi: {medication.prescribedBy}
-                              </div>
-                            )}
-                            {medication.notes && (
-                              <div className="text-gray-500 italic">Ghi chú: {medication.notes}</div>
-                            )}
+                            ))}
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center text-gray-500 py-4">Không có thuốc nào được ghi nhận</div>
+                    <div className="text-center text-gray-500 py-3">Không có toa thuốc nào</div>
                   )}
                 </Card>
+
               </div>
             )
           },
@@ -612,8 +749,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
             label: 'Hồ sơ dinh dưỡng & vận động',
             children: (
               <div className="space-y-6">
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Dinh dưỡng"
                   extra={
                     editingTab !== 'nutrition' ? (
@@ -622,15 +759,15 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                       </Button>
                     ) : (
                       <div className="space-x-2">
-                        <Button 
-                          type="primary" 
-                          icon={<SaveOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
                           onClick={() => handleSave('nutrition')}
                         >
                           Lưu
                         </Button>
-                        <Button 
-                          icon={<CloseOutlined />} 
+                        <Button
+                          icon={<CloseOutlined />}
                           onClick={() => handleCancel('nutrition')}
                         >
                           Hủy
@@ -669,8 +806,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     <div className="text-gray-600">Chưa có dữ liệu dinh dưỡng. Vui lòng cập nhật sau.</div>
                   )}
                 </Card>
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Chế độ tập luyện"
                   extra={
                     editingTab !== 'nutrition' ? (
@@ -712,8 +849,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     <div className="text-gray-600">Chưa có dữ liệu tập luyện. Vui lòng cập nhật sau.</div>
                   )}
                 </Card>
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Khả năng vận động"
                   extra={
                     editingTab !== 'nutrition' ? (
@@ -764,8 +901,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
             label: 'Lịch sử khám & hồ sơ',
             children: (
               <div className="space-y-6">
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Lịch sử khám bệnh"
                   extra={
                     editingTab !== 'history' ? (
@@ -774,15 +911,15 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                       </Button>
                     ) : (
                       <div className="space-x-2">
-                        <Button 
-                          type="primary" 
-                          icon={<SaveOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
                           onClick={() => handleSave('history')}
                         >
                           Lưu
                         </Button>
-                        <Button 
-                          icon={<CloseOutlined />} 
+                        <Button
+                          icon={<CloseOutlined />}
                           onClick={() => handleCancel('history')}
                         >
                           Hủy
@@ -838,8 +975,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     </Timeline>
                   )}
                 </Card>
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Kết quả xét nghiệm"
                   extra={
                     editingTab !== 'history' ? (
@@ -878,8 +1015,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     <div className="text-gray-600">Chưa có kết quả xét nghiệm. Vui lòng cập nhật sau.</div>
                   )}
                 </Card>
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Đơn thuốc"
                   extra={
                     editingTab !== 'history' ? (
@@ -911,8 +1048,8 @@ const ElderlyDetailModal: React.FC<ElderlyDetailModalProps> = ({
                     <div className="text-gray-600">Xem danh sách ở mục Thuốc đang dùng trong hồ sơ y tế.</div>
                   )}
                 </Card>
-                <Card 
-                  size="small" 
+                <Card
+                  size="small"
                   title="Phục hồi chức năng"
                   extra={
                     editingTab !== 'history' ? (

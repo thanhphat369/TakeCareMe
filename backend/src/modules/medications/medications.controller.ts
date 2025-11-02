@@ -2,46 +2,61 @@ import {
   Controller,
   Get,
   Post,
-  Put,
-  Delete,
-  Param,
   Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
 import { MedicationsService } from './medications.service';
 import { CreateMedicationDto } from './dto/create-medication.dto';
 import { UpdateMedicationDto } from './dto/update-medication.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../../entities/user.entity';
 
-@Controller('api/medications')
+@Controller('medications')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class MedicationsController {
   constructor(private readonly medicationsService: MedicationsService) {}
 
-  // ✅ Lấy tất cả thuốc
+  @Post()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  create(@Body() createMedicationDto: CreateMedicationDto) {
+  return this.medicationsService.create(createMedicationDto);
+}
+
   @Get()
-  async findAll() {
+  findAll(@Query('elderId') elderId?: string) {
+    if (elderId) {
+      return this.medicationsService.findByElder(Number(elderId));
+    }
     return this.medicationsService.findAll();
   }
 
-  // ✅ Lấy thuốc theo Elder ID
-  @Get('elder/:elderId')
-  async findByElder(@Param('elderId') elderId: number) {
-    return this.medicationsService.findByElder(elderId);
+  @Get('statistics')
+  getStatistics(@Query('elderId') elderId?: string) {
+    return this.medicationsService.getStatistics(
+      elderId ? Number(elderId) : undefined
+    );
   }
 
-  // ✅ Thêm thuốc
-  @Post()
-  async create(@Body() dto: CreateMedicationDto) {
-    return this.medicationsService.create(dto);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.medicationsService.findOne(Number(id));
   }
 
-  // ✅ Cập nhật thuốc
-  @Put(':id')
-  async update(@Param('id') id: number, @Body() dto: UpdateMedicationDto) {
-    return this.medicationsService.update(id, dto);
+  @Patch(':id')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  update(@Param('id') id: string, @Body() updateDto: UpdateMedicationDto) {
+    return this.medicationsService.update(Number(id), updateDto);
   }
 
-  // ✅ Xóa thuốc
   @Delete(':id')
-  async delete(@Param('id') id: number) {
-    return this.medicationsService.delete(id);
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DOCTOR)
+  remove(@Param('id') id: string) {
+    return this.medicationsService.remove(Number(id));
   }
 }

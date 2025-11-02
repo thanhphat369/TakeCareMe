@@ -1,135 +1,161 @@
- import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Table, Button, Space, Modal, Form, Input, Select, DatePicker, TimePicker,
-  Row, Col, Card, Statistic, Popconfirm, message, Tag, Spin, Empty
+  Table, Button, Space, Modal, Form, Input, Select, DatePicker,
+  Row, Col, Card, Statistic, message, Spin, Empty, Divider,Popconfirm
 } from 'antd';
 import {
-  EditOutlined, DeleteOutlined, PlusOutlined, MedicineBoxOutlined,
-  ClockCircleOutlined, CalendarOutlined,ReloadOutlined
+ DeleteOutlined, PlusOutlined, MedicineBoxOutlined, ReloadOutlined,
+ EyeOutlined
 } from '@ant-design/icons';
-import dayjs, { Dayjs } from 'dayjs';
-// Controllers
+import dayjs from 'dayjs';
 import {
+  fetchElders,
+  fetchDoctors,
   fetchMedications,
   fetchMedicationsByElder,
   createMedication,
   updateMedication,
   deleteMedication,
-  fetchEldersController,
 } from '../controllers/medicationController';
-
-// Types
-import { Medication } from '../types/Medication';
+import { Medication, Elder, Doctor, PrescriptionSummary } from '../types/Medication';
 
 const { Option } = Select;
 
-interface Elder {
-  elderId: number;
-  fullName: string;
-  age?: number;
-  gender?: string;
-  phone?: string;
-}
-
 const MedicationManagement: React.FC = () => {
-  // ==================== STATE ====================
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [prescriptionList, setPrescriptionList] = useState<PrescriptionSummary[]>([]);
+  const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionSummary | null>(null);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+  const [isFormModalVisible, setIsFormModalVisible] = useState(false);
   const [elders, setElders] = useState<Elder[]>([]);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [stats, setStats] = useState({ total: 0, active: 0, expired: 0 });
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingMedication, setEditingMedication] = useState<Medication | null>(
-    null
-  );
+  const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
   const [selectedElderId, setSelectedElderId] = useState<number | null>(null);
   const [form] = Form.useForm();
 
-  // ==================== LOAD DATA ====================
-  const loadElders = async () => {
+  useEffect(() => {
+    loadData();
+    loadPrescriptions();
+  }, []);
+
+  useEffect(() => {
+    loadMedications();
+    loadPrescriptions();
+  }, [selectedElderId]);
+
+  // ===================== LOAD DATA =====================
+  const loadData = async () => {
     try {
-      const data = await fetchEldersController();
-      setElders(data);
+      setLoading(true);
+      const [eldersData, doctorsData] = await Promise.all([
+        fetchElders(),
+        fetchDoctors(),
+      ]);
+      setElders(eldersData);
+      setDoctors(doctorsData);
     } catch (error: any) {
       message.error(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadMedications = async () => {
     try {
       setLoading(true);
-      let data: Medication[];
-
-      if (selectedElderId) {
-        // Load medications for specific elder
-        data = await fetchMedicationsByElder(selectedElderId);
-      } else {
-        // Load all medications
-        data = await fetchMedications();
-      }
-
+      const data = selectedElderId
+        ? await fetchMedicationsByElder(selectedElderId)
+        : await fetchMedications();
       setMedications(data);
     } catch (error: any) {
       message.error(error.message);
-      setMedications([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load elders on mount
-  useEffect(() => {
-    loadElders();
-  }, []);
+  const loadPrescriptions = async () => {
+    setLoading(true);
+    try {
+      const meds: Medication[] = selectedElderId
+        ? await fetchMedicationsByElder(selectedElderId) // 👈 chỉ lấy theo Elder
+        : await fetchMedications();
 
-  // Load medications when elder selected
-  useEffect(() => {
-    if (selectedElderId) {
-      loadMedications();
+      const grouped: Record<string, PrescriptionSummary> = {};
+      meds.forEach((med) => {
+        const key = `${med.elderId}-${med.diagnosis || 'nodx'}-${med.prescribedBy || 'nodoctor'}`;
+
+        if (!grouped[key]) {
+          grouped[key] = {
+            elderId: med.elderId,
+            elderName: med.elder?.fullName || 'Không rõ',
+            diagnosis: med.diagnosis || 'Không có chẩn đoán',
+            prescribedBy: med.prescriber?.fullName || 'Không rõ',
+            startDate: med.startDate,
+            endDate: med.endDate,
+            medications: [],
+          };
+        }
+
+        grouped[key].medications.push(med);
+      });
+
+      setPrescriptionList(Object.values(grouped));
+
+      // 👉 cập nhật lại thống kê theo elder
+      const total = meds.length;
+      const active = meds.filter(
+        (m) => !m.endDate || dayjs(m.endDate).isAfter(dayjs())
+      ).length;
+      const expired = total - active;
+
+      setStats({ total, active, expired });
+    } catch (error: any) {
+      message.error(error.message || 'Không thể tải danh sách toa thuốc');
+    } finally {
+      setLoading(false);
     }
-  }, [selectedElderId]);
+  };
 
-  // ==================== HANDLERS ====================
+  const showDetail = (record: PrescriptionSummary) => {
+    setSelectedPrescription(record);
+    setIsDetailModalVisible(true);
+  };
+
+  // ===================== ADD / EDIT =====================
   const handleAdd = () => {
     setEditingMedication(null);
     form.resetFields();
-    
-    // Pre-fill elder if one is selected
-    if (selectedElderId) {
-      form.setFieldsValue({ elderId: selectedElderId });
-    }
-    
-    setIsModalVisible(true);
+    if (selectedElderId) form.setFieldsValue({ elderId: selectedElderId });
+    setIsFormModalVisible(true);
   };
 
   const handleEdit = (medication: Medication) => {
     setEditingMedication(medication);
-
-    // Parse time range if exists
-    let timeRange: [Dayjs, Dayjs] | undefined;
-    if (medication.time) {
-      const times = medication.time.split(' - ');
-      if (times.length === 2) {
-        timeRange = [
-          dayjs(times[0], 'HH:mm'),
-          dayjs(times[1], 'HH:mm'),
-        ];
-      }
-    }
-
     form.setFieldsValue({
       elderId: medication.elderId,
-      name: medication.name,
-      dose: medication.dose,
-      frequency: medication.frequency,
-      time: timeRange,
-      startDate: medication.startDate ? dayjs(medication.startDate) : undefined,
-      endDate: medication.endDate ? dayjs(medication.endDate) : undefined,
+      diagnosis: medication.diagnosis,
+      prescribedBy: medication.prescribedBy,
+      startDate: medication.startDate ? dayjs(medication.startDate) : null,
+      endDate: medication.endDate ? dayjs(medication.endDate) : null,
       notes: medication.notes,
+      medications: [
+        {
+          name: medication.name,
+          dose: medication.dose,
+          frequency: medication.frequency,
+          time: medication.time,
+          notes: medication.notes,
+        },
+      ],
     });
-
-    setIsModalVisible(true);
+    setIsFormModalVisible(true);
   };
 
+  // ===================== DELETE =====================
   const handleDelete = async (id: number) => {
     try {
       await deleteMedication(id);
@@ -140,260 +166,100 @@ const MedicationManagement: React.FC = () => {
     }
   };
 
+  // ===================== SUBMIT FORM =====================
   const handleSubmit = async () => {
-    try {
-      setSubmitting(true);
-      const values = await form.validateFields();
+  try {
+    setSubmitting(true);
+    const values = await form.validateFields();
+    const { medications, ...baseInfo } = values;
 
-      // Format time range
-      let timeRange: string | null = null;
-      if (Array.isArray(values.time) && values.time.length === 2) {
-        timeRange = values.time
-          .map((t: Dayjs) => t.format('HH:mm'))
-          .join(' - ');
-      }
+    if (!medications || medications.length === 0) {
+      message.warning('Vui lòng thêm ít nhất một thuốc.');
+      return;
+    }
 
-      const payload: Partial<Medication> = {
-        elderId: Number(values.elderId),
-        name: values.name,
-        dose: values.dose || null,
-        frequency: values.frequency || null,
-        time: timeRange,
-        startDate: values.startDate ? values.startDate.format('YYYY-MM-DD') : null,
-        endDate: values.endDate ? values.endDate.format('YYYY-MM-DD') : null,
-        notes: values.notes || null,
+    // Nếu đang sửa
+    if (editingMedication) {
+      const med = medications[0];
+      const payload = {
+        elderId: Number(baseInfo.elderId),
+        name: med.name,
+        dose: med.dose || undefined,
+        diagnosis: baseInfo.diagnosis,
+        frequency: med.frequency || undefined,
+        time: med.time || undefined,
+        startDate: baseInfo.startDate ? dayjs(baseInfo.startDate).toISOString() : undefined,
+        endDate: baseInfo.endDate ? dayjs(baseInfo.endDate).toISOString() : undefined,
+        notes: med.notes || baseInfo.notes || undefined,
+        prescribedBy: baseInfo.prescribedBy ? Number(baseInfo.prescribedBy) : undefined,
       };
 
-      if (editingMedication) {
-        await updateMedication(editingMedication.medicationId, payload);
-        message.success('Cập nhật thuốc thành công');
-      } else {
+      await updateMedication(editingMedication.medicationId, payload);
+      message.success('Cập nhật thuốc thành công');
+    } else {
+      // Nếu là thêm mới
+      for (const med of medications) {
+        const payload = {
+          elderId: Number(baseInfo.elderId),
+          name: med.name,
+          dose: med.dose || undefined,
+          diagnosis: baseInfo.diagnosis,
+          frequency: med.frequency || undefined,
+          time: med.time || undefined,
+          startDate: baseInfo.startDate ? dayjs(baseInfo.startDate).toISOString() : undefined,
+          endDate: baseInfo.endDate ? dayjs(baseInfo.endDate).toISOString() : undefined,
+          notes: med.notes || baseInfo.notes || undefined,
+          prescribedBy: baseInfo.prescribedBy ? Number(baseInfo.prescribedBy) : undefined,
+        };
+
         await createMedication(payload);
-        message.success('Thêm thuốc mới thành công');
       }
-
-      setIsModalVisible(false);
-      form.resetFields();
-      loadMedications();
-    } catch (error: any) {
-      if (error.errorFields) {
-        // Form validation error
-        message.error('Vui lòng kiểm tra lại thông tin');
-      } else {
-        message.error(error.message);
-      }
-    } finally {
-      setSubmitting(false);
+      message.success('Thêm thuốc thành công');
     }
-  };
 
-  const handleCancel = () => {
-    setIsModalVisible(false);
+    // ✅ Đóng form + load lại danh sách
+    setIsFormModalVisible(false);
     form.resetFields();
-    setEditingMedication(null);
-  };
+    await loadPrescriptions();
 
-  const handleRefresh = () => {
-    loadMedications();
-  };
+  } catch (error: any) {
+    if (!error.errorFields) message.error(error.message || 'Lỗi khi lưu thuốc');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
-  // ==================== HELPERS ====================
+
+  // 🔹 Xác định trạng thái thuốc
   const getMedicationStatus = (medication: Medication) => {
+    if (!medication.endDate) return { label: 'Đang dùng', color: 'green' };
     const today = dayjs();
-
-    if (medication.endDate && dayjs(medication.endDate).isBefore(today)) {
-      return { label: 'Đã hết hạn', color: 'red' };
-    }
-
-    if (
-      medication.startDate &&
-      dayjs(medication.startDate).isAfter(today)
-    ) {
-      return { label: 'Chưa bắt đầu', color: 'orange' };
-    }
-
-    return { label: 'Đang sử dụng', color: 'green' };
+    const endDate = dayjs(medication.endDate);
+    return endDate.isBefore(today)
+      ? { label: 'Đã hết hạn', color: 'red' }
+      : { label: 'Đang dùng', color: 'green' };
   };
 
-  // ==================== STATISTICS ====================
-  const stats = {
-    total: medications.length,
-    active: medications.filter(
-      (m) => !m.endDate || dayjs(m.endDate).isAfter(dayjs())
-    ).length,
-    expired: medications.filter(
-      (m) => m.endDate && dayjs(m.endDate).isBefore(dayjs())
-    ).length,
-    upcoming: medications.filter(
-      (m) => m.startDate && dayjs(m.startDate).isAfter(dayjs())
-    ).length,
-  };
-
-  // ==================== TABLE COLUMNS ====================
-  const columns = [
-    {
-      title: 'Tên thuốc',
-      dataIndex: 'name',
-      key: 'name',
-      width: 180,
-      render: (text: string) => (
-        <Space>
-          <MedicineBoxOutlined style={{ color: '#1890ff' }} />
-          <span className="font-medium">{text}</span>
-        </Space>
-      ),
-    },
-    {
-      title: 'Người cao tuổi',
-      key: 'elder',
-      width: 190,
-      render: (_: any, record: Medication) => {
-        const elder =
-          record.elder || elders.find((e) => e.elderId === record.elderId);
-        return elder ? elder.fullName : '-';
-      },
-    },
-    {
-      title: 'Liều lượng',
-      dataIndex: 'dose',
-      key: 'dose',
-      width: 120,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Tần suất',
-      dataIndex: 'frequency',
-      key: 'frequency',
-      width: 130,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Thời gian uống',
-      dataIndex: 'time',
-      key: 'time',
-      width: 140,
-      render: (text: string) =>
-        text ? (
-          <Space>
-            <ClockCircleOutlined />
-            {text}
-          </Space>
-        ) : (
-          '-'
-        ),
-    },
-    {
-      title: 'Ngày bắt đầu',
-      dataIndex: 'startDate',
-      key: 'startDate',
-      width: 120,
-      render: (date: string) =>
-        date ? (
-          <Space>
-            <CalendarOutlined />
-            {dayjs(date).format('DD/MM/YYYY')}
-          </Space>
-        ) : (
-          '-'
-        ),
-    },
-    {
-      title: 'Ngày kết thúc',
-      dataIndex: 'endDate',
-      key: 'endDate',
-      width: 120,
-      render: (date: string) =>
-        date ? (
-          <Space>
-            <CalendarOutlined />
-            {dayjs(date).format('DD/MM/YYYY')}
-          </Space>
-        ) : (
-          '-'
-        ),
-    },
-    {
-      title: 'Trạng thái',
-      key: 'status',
-      width: 130,
-      render: (_: any, record: Medication) => {
-        const status = getMedicationStatus(record);
-        return <Tag color={status.color}>{status.label}</Tag>;
-      },
-    },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: true,
-      render: (text: string) => text || '-',
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      width: 120,
-      fixed: 'right' as const,
-      render: (_: any, record: Medication) => (
-        <Space size="small">
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            size="small"
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa thuốc này?"
-            onConfirm={() => handleDelete(record.medicationId)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" danger icon={<DeleteOutlined />} size="small">
-              Xóa
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
-
-  // ==================== RENDER ====================
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-[1600px] mx-auto space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-1">
-              Quản lý thuốc
-            </h1>
-            <p className="text-gray-600">
-              Theo dõi và quản lý lịch dùng thuốc của người cao tuổi
-            </p>
+            <h1 className="text-3xl font-bold text-gray-800 mb-1">Quản lý thuốc</h1>
+            <p className="text-gray-600">Theo dõi và quản lý thuốc cho người cao tuổi</p>
           </div>
           <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={handleRefresh}
-              loading={loading}
-            >
+            <Button icon={<ReloadOutlined />} onClick={loadMedications} loading={loading}>
               Làm mới
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAdd}
-              size="large"
-            >
-              Thêm thuốc mới
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} size="large">
+              Thêm thuốc
             </Button>
           </Space>
         </div>
 
-        {/* Elder Selection */}
+        {/* Filter by Elder */}
         <Card>
           <div className="flex items-center space-x-4">
             <div className="flex-1">
@@ -404,19 +270,16 @@ const MedicationManagement: React.FC = () => {
                 style={{ width: 300 }}
                 placeholder="Chọn người cao tuổi"
                 value={selectedElderId}
-                onChange={(value) => setSelectedElderId(value)}
+                onChange={setSelectedElderId} // 👈 khi đổi Elder sẽ tự trigger useEffect
                 allowClear
-                onClear={() => setSelectedElderId(null)}
                 showSearch
-                filterOption={(input, option) => {
-                  const label = String(option?.label || '');
-                  return label.toLowerCase().includes(input.toLowerCase());
-                }}
+                filterOption={(input, option) =>
+                  String(option?.label || '').toLowerCase().includes(input.toLowerCase())
+                }
               >
                 {elders.map((elder) => (
                   <Option key={elder.elderId} value={elder.elderId}>
-                    {elder.fullName}
-                    {elder.age && ` (${elder.age} tuổi)`}
+                    {elder.fullName} {elder.age && `(${elder.age} tuổi)`}
                   </Option>
                 ))}
               </Select>
@@ -426,7 +289,7 @@ const MedicationManagement: React.FC = () => {
 
         {/* Statistics */}
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={8}>
             <Card>
               <Statistic
                 title="Tổng số thuốc"
@@ -436,99 +299,199 @@ const MedicationManagement: React.FC = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={8}>
             <Card>
-              <Statistic
-                title="Đang sử dụng"
-                value={stats.active}
-                valueStyle={{ color: '#10b981' }}
-              />
+              <Statistic title="Đang sử dụng" value={stats.active} valueStyle={{ color: '#10b981' }} />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={8}>
             <Card>
-              <Statistic
-                title="Đã hết hạn"
-                value={stats.expired}
-                valueStyle={{ color: '#ef4444' }}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card>
-              <Statistic
-                title="Chưa bắt đầu"
-                value={stats.upcoming}
-                valueStyle={{ color: '#f59e0b' }}
-              />
+              <Statistic title="Đã hết hạn" value={stats.expired} valueStyle={{ color: '#ef4444' }} />
             </Card>
           </Col>
         </Row>
-
-        {/* Table */}
-        <Card>
-          <Spin spinning={loading}>
-            {medications.length > 0 ? (
-              <Table
-                columns={columns}
-                dataSource={medications}
-                rowKey="medicationId"
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total) => `Tổng ${total} thuốc`,
-                }}
-                scroll={{ x: 1400 }}
-              />
-            ) : (
-              <Empty
-                description={
-                  selectedElderId
-                    ? 'Chưa có thuốc nào được thêm cho người cao tuổi này'
-                    : 'Chọn người cao tuổi để xem danh sách thuốc'
-                }
-              />
-            )}
-          </Spin>
-        </Card>
       </div>
+      {/* Danh sách toa thuốc */}
+      <Card>
+        <Spin spinning={loading}>
+          {prescriptionList.length > 0 ? (
+            <Table
+              columns={[
+                { title: 'Người cao tuổi', dataIndex: 'elderName', key: 'elderName' },
+                { title: 'Chẩn đoán', dataIndex: 'diagnosis', key: 'diagnosis' },
+                { title: 'Bác sĩ kê toa', dataIndex: 'prescribedBy', key: 'prescribedBy' },
+                {
+                  title: 'Số lượng thuốc',
+                  key: 'count',
+                  render: (_, record: PrescriptionSummary) => record.medications.length,
+                },
+                {
+                  title: 'Ngày bắt đầu',
+                  dataIndex: 'startDate',
+                  render: (date) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
+                },
+                {
+                  title: 'Ngày kết thúc',
+                  dataIndex: 'endDate',
+                  render: (date) => (date ? dayjs(date).format('DD/MM/YYYY') : '-'),
+                },
+                {
+                  title: 'Hành động',
+                  key: 'action',
+                  render: (_, record: PrescriptionSummary) => (
+                     <Button icon={<EyeOutlined />} type="text"  onClick={() => showDetail(record)} />
+                  ),
+                },
+              ]}
+              dataSource={prescriptionList}
+              rowKey={(r) => `${r.elderId}-${r.diagnosis}-${r.prescribedBy}`}
+              pagination={false}
+            />
+          ) : (
+            <Empty description="Chưa có toa thuốc nào" />
+          )}
+        </Spin>
+      </Card>
 
-      {/* Add/Edit Modal */}
       <Modal
-        title={
-          editingMedication ? 'Chỉnh sửa thông tin thuốc' : 'Thêm thuốc mới'
-        }
-        open={isModalVisible}
+  title={`Chi tiết toa thuốc - ${selectedPrescription?.elderName || ''}`}
+  open={isDetailModalVisible}
+  onCancel={() => setIsDetailModalVisible(false)}
+  footer={null}
+  width={850}
+>
+  {selectedPrescription ? (
+    <>
+      <p><strong>Chẩn đoán:</strong> {selectedPrescription.diagnosis}</p>
+      <p><strong>Bác sĩ kê toa:</strong> {selectedPrescription.prescribedBy}</p>
+
+      <Table
+        dataSource={selectedPrescription.medications}
+        rowKey="medicationId"
+        pagination={false}
+        columns={[
+          { title: 'Tên thuốc', dataIndex: 'name' },
+          { title: 'Liều lượng', dataIndex: 'dose' },
+          { title: 'Tần suất', dataIndex: 'frequency' },
+          { title: 'Thời gian uống', dataIndex: 'time' },
+          { title: 'Ghi chú', dataIndex: 'notes' },
+          {
+            title: 'Hành động',
+            key: 'action',
+            render: (_: any, record: Medication) => (
+              <Space>
+                {/* 👁️ Xem hoặc mở chỉnh sửa nhanh */}
+                <Button
+                  icon={<EyeOutlined />}
+                  type="text"
+                  onClick={() => {
+                    setEditingMedication(record);
+                    form.setFieldsValue({
+                      elderId: record.elderId,
+                      prescribedBy: record.prescribedBy,
+                      diagnosis: record.diagnosis,
+                      startDate: record.startDate ? dayjs(record.startDate) : undefined,
+                      endDate: record.endDate ? dayjs(record.endDate) : undefined,
+                      notes: record.notes,
+                      medications: [
+                        {
+                          name: record.name,
+                          dose: record.dose,
+                          frequency: record.frequency,
+                          time: record.time,
+                          notes: record.notes,
+                        },
+                      ],
+                    });
+                    setIsFormModalVisible(true);
+                    setIsDetailModalVisible(false);
+                  }}
+                />
+
+                {/* ✏️ Nút Sửa */}
+                <Button
+                  icon={<MedicineBoxOutlined />}
+                  type="text"
+                  onClick={() => {
+                    handleEdit(record);
+                    setIsDetailModalVisible(false);
+                  }}
+                />
+
+                {/* ❌ Nút Xóa */}
+                <Popconfirm
+                  title="Xóa thuốc này?"
+                  okText="Có"
+                  cancelText="Không"
+                  onConfirm={async () => {
+                    await handleDelete(record.medicationId);
+                    // Cập nhật lại danh sách hiển thị trong modal
+                    setSelectedPrescription((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            medications: prev.medications.filter(
+                              (m) => m.medicationId !== record.medicationId
+                            ),
+                          }
+                        : prev
+                    );
+                    loadPrescriptions();
+                  }}
+                >
+                  <Button icon={<DeleteOutlined />} type="text" danger />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+      />
+    </>
+  ) : (
+    <Empty description="Không có dữ liệu" />
+  )}
+</Modal>
+      {/* Modal thêm/sửa */}
+      <Modal
+        title={editingMedication ? 'Chỉnh sửa thuốc' : 'Thêm thuốc mới'}
+        open={isFormModalVisible}
         onOk={handleSubmit}
-        onCancel={handleCancel}
-        width={800}
+        onCancel={() => {
+          setIsFormModalVisible(false);
+          form.resetFields();
+        }}
         confirmLoading={submitting}
-        okText={editingMedication ? 'Cập nhật' : 'Thêm mới'}
+        width={1000}
+        okText={editingMedication ? 'Cập nhật' : 'Thêm'}
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" className="mt-4">
           <Row gutter={16}>
-            <Col span={24}>
+            <Col span={12}>
               <Form.Item
                 name="elderId"
                 label="Người cao tuổi"
-                rules={[
-                  { required: true, message: 'Vui lòng chọn người cao tuổi' },
-                ]}
+                rules={[{ required: true, message: 'Vui lòng chọn người cao tuổi' }]}
               >
-                <Select
-                  placeholder="Chọn người cao tuổi"
-                  showSearch
-                  filterOption={(input, option) => {
-                    const label = String(option?.label || '');
-                    return label.toLowerCase().includes(input.toLowerCase());
-                  }}
-                >
+                <Select placeholder="Chọn người cao tuổi">
                   {elders.map((elder) => (
                     <Option key={elder.elderId} value={elder.elderId}>
                       {elder.fullName}
-                      {elder.age && ` (${elder.age} tuổi)`}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="prescribedBy"
+                label="Bác sĩ kê toa"
+                rules={[{ required: true, message: 'Vui lòng chọn bác sĩ kê toa' }]}
+              >
+                <Select placeholder="Chọn bác sĩ" allowClear showSearch>
+                  {doctors.map((doc) => (
+                    <Option key={doc.userId} value={doc.userId}>
+                      {doc.fullName}
                     </Option>
                   ))}
                 </Select>
@@ -538,53 +501,11 @@ const MedicationManagement: React.FC = () => {
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item
-                name="name"
-                label="Tên thuốc"
-                rules={[
-                  { required: true, message: 'Vui lòng nhập tên thuốc' },
-                  { max: 100, message: 'Tên thuốc tối đa 100 ký tự' },
-                ]}
-              >
-                <Input placeholder="Nhập tên thuốc" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="dose"
-                label="Liều lượng"
-                rules={[{ max: 50, message: 'Liều lượng tối đa 50 ký tự' }]}
-              >
-                <Input placeholder="VD: 500mg, 1 viên" />
+              <Form.Item name="diagnosis" label="Chẩn đoán">
+                <Input placeholder="Nhập chẩn đoán" />
               </Form.Item>
             </Col>
           </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="frequency" label="Tần suất">
-                <Select placeholder="Chọn tần suất">
-                  <Option value="1 lần/ngày">1 lần/ngày</Option>
-                  <Option value="2 lần/ngày">2 lần/ngày</Option>
-                  <Option value="3 lần/ngày">3 lần/ngày</Option>
-                  <Option value="1 lần/tuần">1 lần/tuần</Option>
-                  <Option value="Theo chỉ định">Theo chỉ định</Option>
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item
-                name="time"
-                label="Thời gian uống"
-                rules={[
-                  { required: true, message: 'Vui lòng chọn thời gian uống' },
-                ]}
-              >
-                <TimePicker.RangePicker format="HH:mm" className="w-full" />
-              </Form.Item>
-            </Col>
-          </Row>
-
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item name="startDate" label="Ngày bắt đầu">
@@ -597,17 +518,99 @@ const MedicationManagement: React.FC = () => {
               </Form.Item>
             </Col>
           </Row>
-
-          <Form.Item
-            name="notes"
-            label="Ghi chú"
-            rules={[{ max: 255, message: 'Ghi chú tối đa 255 ký tự' }]}
-          >
-            <Input.TextArea
-              rows={3}
-              placeholder="Nhập ghi chú nếu có (cách dùng, lưu ý đặc biệt...)"
-            />
-          </Form.Item>
+          <Divider>Danh sách thuốc</Divider>
+          <Form.List name="medications">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Card key={key} size="small" className="mb-4">
+                    <Row gutter={16}>
+                      <Col span={8}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'name']}
+                          label="Tên thuốc"
+                          rules={[{ required: true, message: 'Nhập tên thuốc' }]}
+                        >
+                          <Input placeholder="Tên thuốc" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'dose']}
+                          label="Liều lượng"
+                        >
+                          <Input placeholder="VD: 500mg" />
+                        </Form.Item>
+                      </Col>
+                      <Col span={6}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'frequency']}
+                          label="Tần suất"
+                        >
+                          <Select placeholder="Tần suất">
+                            <Option value="1 lần/ngày">1 lần/ngày</Option>
+                            <Option value="2 lần/ngày">2 lần/ngày</Option>
+                            <Option value="3 lần/ngày">3 lần/ngày</Option>
+                            <Option value="Theo chỉ định">Theo chỉ định</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col span={4}>
+                        <Form.Item label=" ">
+                          <Button
+                            type="text"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={() => remove(name)}
+                          >
+                            Xóa
+                          </Button>
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={16}>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'time']}
+                          label="Thời gian uống"
+                        >
+                          <Select placeholder="Tần suất">
+                            <Option value="Sáng">Sáng</Option>
+                            <Option value="Sáng - Chiều">Sáng - Trưa</Option>
+                            <Option value="Sáng - Trưa - Tối">Sáng - Trưa - Tối</Option>
+                            <Option value="Theo chỉ định">Theo chỉ định</Option>
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col span={12}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'notes']}
+                          label="Ghi chú"
+                        >
+                          <Input placeholder="Ghi chú về thuốc" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}
+                  >
+                    Thêm thuốc
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
     </div>

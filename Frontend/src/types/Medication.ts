@@ -1,51 +1,50 @@
-import dayjs, { Dayjs } from 'dayjs';
-
-/**
- * 🔹 Kiểu dữ liệu Medication — tương ứng với entity Medications (backend)
- */
 export interface Medication {
-  /** ID thuốc (PK) */
   medicationId: number;
-
-  /** ID người cao tuổi (FK -> Elders) */
   elderId: number;
-
-  /** Thông tin người cao tuổi (nếu có join từ backend) */
+  name: string;
+  dose?: string;
+  frequency?: string;
+  time?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+  diagnosis: string;
+  prescribedBy?: number;
   elder?: {
     elderId: number;
     fullName: string;
-    age?: number;
-    gender?: string;
-    phone?: string;
   };
-
-  /** Tên thuốc */
-  name: string;
-
-  /** Liều lượng (vd: 500mg, 2 viên, ...) */
-  dose?: string;
-
-  /** Tần suất (vd: 2 lần/ngày) */
-  frequency?: string;
-
-  /** Ngày bắt đầu uống */
-  startDate?: string | Date | Dayjs | null;
-
-  /** Ngày kết thúc (nếu có) */
-  endDate?: string | Date | Dayjs | null;
-
-  /** Ghi chú */
-  notes?: string;
-
-  /** ID người kê đơn (nếu có) */
-  prescribedBy?: number | null;
-
-  /** Thông tin người kê đơn (join User) */
   prescriber?: {
     userId: number;
     fullName: string;
   };
+}
 
-  /** Giờ uống thuốc (vd: '08:00 - 20:00') */
-  time?: string | null;
+export interface Elder {
+  elderId: number;
+  fullName: string;
+  age?: number;
+  gender?: string;
+  phone?: string;
+}
+
+export interface Doctor {
+  userId: number;
+  fullName: string;
+  role: string;
+}
+export interface PrescriptionSummary {
+  elderId: number;
+  elderName: string;
+  diagnosis?: string;
+  prescribedBy?: string;
+  medications: Medication[];
+  startDate?: string;
+  endDate?: string;
+}
+
+interface ElderlyDetailModalProps {
+  visible: boolean;
+  elderly: any | null; // hoặc kiểu Elder
+  onClose: () => void;
 }

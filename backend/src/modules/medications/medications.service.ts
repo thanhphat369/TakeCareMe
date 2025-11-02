@@ -12,46 +12,84 @@ export class MedicationsService {
     private readonly medicationRepository: Repository<Medication>,
   ) {}
 
-  // ✅ Lấy tất cả thuốc (JOIN Elder)
   async findAll(): Promise<Medication[]> {
     return this.medicationRepository.find({
-      relations: ['elder'], // join bảng Elder
+      relations: ['elder', 'prescriber'],
       order: { startDate: 'DESC' },
     });
   }
 
-  // ✅ Lấy thuốc theo Elder ID
   async findByElder(elderId: number): Promise<Medication[]> {
-    const meds = await this.medicationRepository.find({
+    return this.medicationRepository.find({
       where: { elderId },
-      relations: ['elder'],
+      relations: ['prescriber'],
       order: { startDate: 'DESC' },
     });
-    if (!meds || meds.length === 0) {
-      throw new NotFoundException('Không tìm thấy thuốc cho người này');
+  }
+
+  async findOne(id: number): Promise<Medication> {
+    const medication = await this.medicationRepository.findOne({
+      where: { medicationId: id },
+      relations: ['elder', 'prescriber'],
+    });
+
+    if (!medication) {
+      throw new NotFoundException(`Medication with ID ${id} not found`);
     }
-    return meds;
+
+    return medication;
   }
 
-  // ✅ Tạo thuốc mới
   async create(dto: CreateMedicationDto): Promise<Medication> {
-    const newMed = this.medicationRepository.create(dto);
-    return this.medicationRepository.save(newMed);
-  }
+  const medication = this.medicationRepository.create({
+    elderId: dto.elderId,
+    name: dto.name,
+    dose: dto.dose || null,
+    frequency: dto.frequency || null,
+    time: dto.time || null,
+    startDate: dto.startDate ? new Date(dto.startDate) : null,
+    endDate: dto.endDate ? new Date(dto.endDate) : null,
+    notes: dto.notes || null,
+    diagnosis: dto.diagnosis || null,         
+    prescribedBy: dto.prescribedBy || null,   
+  });
 
-  // ✅ Cập nhật thuốc
+  return await this.medicationRepository.save(medication);
+}
   async update(id: number, dto: UpdateMedicationDto): Promise<Medication> {
-    const med = await this.medicationRepository.findOne({ where: { medicationId: id } });
-    if (!med) throw new NotFoundException('Không tìm thấy thuốc để cập nhật');
-    Object.assign(med, dto);
-    return this.medicationRepository.save(med);
+    const medication = await this.findOne(id);
+
+    Object.assign(medication, {
+      ...dto,
+      startDate: dto.startDate ? new Date(dto.startDate) : medication.startDate,
+      endDate: dto.endDate ? new Date(dto.endDate) : medication.endDate,
+    });
+
+    return this.medicationRepository.save(medication);
   }
 
-  // ✅ Xóa thuốc
-  async delete(id: number): Promise<{ message: string }> {
-    const med = await this.medicationRepository.findOne({ where: { medicationId: id } });
-    if (!med) throw new NotFoundException('Không tìm thấy thuốc để xóa');
-    await this.medicationRepository.remove(med);
-    return { message: 'Xóa thuốc thành công' };
+  async remove(id: number): Promise<void> {
+    const medication = await this.findOne(id);
+    await this.medicationRepository.remove(medication);
+  }
+
+  async getStatistics(elderId?: number) {
+    const where = elderId ? { elderId } : {};
+    const medications = await this.medicationRepository.find({ where });
+
+    const today = new Date();
+    const active = medications.filter(m => 
+      !m.endDate || new Date(m.endDate) >= today
+    ).length;
+    
+    const expired = medications.filter(m => 
+      m.endDate && new Date(m.endDate) < today
+    ).length;
+
+    return {
+      total: medications.length,
+      active,
+      expired,
+    };
   }
 }

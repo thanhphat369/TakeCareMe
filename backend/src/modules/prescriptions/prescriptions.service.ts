@@ -1,155 +1,231 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Prescription } from '../../entities/prescription.entity';
-import { Medication } from '../../entities/medication.entity';
-import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
+// import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+// import { InjectRepository } from '@nestjs/typeorm';
+// import { Repository, DataSource } from 'typeorm';
+// import { Medication } from '../../entities/medication.entity';
+// import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+// import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
 
-@Injectable()
-export class PrescriptionsService {
-  constructor(
-    @InjectRepository(Prescription)
-    private prescriptionRepository: Repository<Prescription>,
-    @InjectRepository(Medication)
-    private medicationRepository: Repository<Medication>,
-  ) {}
+// @Injectable()
+// export class PrescriptionsService {
+//   constructor(
+//     @InjectRepository(Medication)
+//     private medicationRepository: Repository<Medication>,
+//     private dataSource: DataSource,
+//   ) {}
 
-  async create(createPrescriptionDto: CreatePrescriptionDto): Promise<Prescription> {
-    const { medications, ...prescriptionData } = createPrescriptionDto;
+//   /**
+//    * 🔹 Lấy tất cả đơn thuốc (group by prescription_date + elder_id)
+//    */
+//   async findAll(): Promise<any[]> {
+//     const medications = await this.medicationRepository.find({
+//       relations: ['elder', 'prescriber'],
+//       order: { prescriptionDate: 'DESC', medicationId: 'ASC' },
+//     });
 
-    // Create prescription
-    const prescription = this.prescriptionRepository.create({
-      ...prescriptionData,
-      prescriptionDate: new Date(prescriptionData.prescriptionDate),
-      startDate: prescriptionData.startDate ? new Date(prescriptionData.startDate) : null,
-      endDate: prescriptionData.endDate ? new Date(prescriptionData.endDate) : null,
-    });
+//     const grouped = this.groupMedicationsByPrescription(medications);
+//     return grouped;
+//   }
 
-    const savedPrescription = await this.prescriptionRepository.save(prescription);
+//   /**
+//    * 🔹 Lấy đơn thuốc theo Elder
+//    */
+//   async findByElder(elderId: number): Promise<any[]> {
+//     const medications = await this.medicationRepository.find({
+//       where: { elderId },
+//       relations: ['prescriber'],
+//       order: { prescriptionDate: 'DESC', medicationId: 'ASC' },
+//     });
 
-    // Create medications for this prescription
-    if (medications && medications.length > 0) {
-      const medicationEntities = medications.map(med => 
-        this.medicationRepository.create({
-          ...med,
-          elderId: prescriptionData.elderId,
-          prescriptionId: savedPrescription.prescriptionId,
-          prescribedBy: prescriptionData.prescribedBy,
-        })
-      );
+//     const grouped = this.groupMedicationsByPrescription(medications);
+//     return grouped;
+//   }
 
-      await this.medicationRepository.save(medicationEntities);
-    }
+//   /**
+//    * 🔹 Lấy chi tiết 1 đơn thuốc (by first medication_id)
+//    */
+//   async findOne(medicationId: number): Promise<any> {
+//     const firstMed = await this.medicationRepository.findOne({
+//       where: { medicationId },
+//       relations: ['elder', 'prescriber'],
+//     });
 
-    return this.findOne(savedPrescription.prescriptionId);
-  }
-  
+//     if (!firstMed) {
+//       throw new NotFoundException('Prescription not found');
+//     }
 
-  async findAll(): Promise<Prescription[]> {
-    return this.prescriptionRepository.find({
-      relations: ['elder', 'prescriber', 'medications'],
-      order: { prescriptionDate: 'DESC' },
-    });
-  }
+//     // Lấy tất cả medications cùng prescription_date + elder_id
+//     const medications = await this.medicationRepository.find({
+//       where: { 
+//         prescriptionDate: firstMed.prescriptionDate,
+//         elderId: firstMed.elderId,
+//         prescribedBy: firstMed.prescribedBy,
+//       },
+//       relations: ['elder', 'prescriber'],
+//       order: { medicationId: 'ASC' },
+//     });
 
-  async findByElder(elderId: number): Promise<Prescription[]> {
-    return this.prescriptionRepository.find({
-      where: { elderId },
-      relations: ['elder', 'prescriber', 'medications'],
-      order: { prescriptionDate: 'DESC' },
-    });
-  }
+//     return this.formatPrescriptionGroup(medications);
+//   }
 
-  async findOne(id: number): Promise<Prescription> {
-    return this.prescriptionRepository.findOne({
-      where: { prescriptionId: id },
-      relations: ['elder', 'prescriber', 'medications'],
-    });
-  }
+//   /**
+//    * 🔹 Tạo đơn thuốc mới
+//    */
+//   async create(dto: CreatePrescriptionDto): Promise<any> {
+//     const queryRunner = this.dataSource.createQueryRunner();
+//     await queryRunner.connect();
+//     await queryRunner.startTransaction();
 
-  // async update(id: number, updatePrescriptionDto: UpdatePrescriptionDto): Promise<Prescription> {
-  //   const { medications, ...prescriptionData } = updatePrescriptionDto;
+//     try {
+//       const medications = dto.medications.map((med) =>
+//         this.medicationRepository.create({
+//           elderId: dto.elderId,
+//           name: med.name,
+//           dose: med.dose,
+//           frequency: med.frequency,
+//           time: med.time,
+//           startDate: dto.startDate || dto.prescriptionDate,
+//           endDate: dto.endDate,
+//           notes: med.notes,
+//           prescribedBy: dto.prescribedBy,
+//           diagnosis: dto.diagnosis,
+//           prescriptionDate: dto.prescriptionDate,
+//         })
+//       );
 
-  //   // Update prescription
-  //   await this.prescriptionRepository.update(id, {
-  //     ...prescriptionData,
-  //     prescriptionDate: prescriptionData.prescriptionDate ? new Date(prescriptionData.prescriptionDate) : undefined,
-  //     startDate: prescriptionData.startDate ? new Date(prescriptionData.startDate) : undefined,
-  //     endDate: prescriptionData.endDate ? new Date(prescriptionData.endDate) : undefined,
-  //   });
+//       const savedMeds = await queryRunner.manager.save(Medication, medications);
+//       await queryRunner.commitTransaction();
 
-  //   // Update medications if provided
-  //   if (medications) {
-  //     // Delete existing medications for this prescription
-  //     await this.medicationRepository.delete({ prescriptionId: id });
+//       return this.formatPrescriptionGroup(savedMeds);
+//     } catch (error) {
+//       await queryRunner.rollbackTransaction();
+//       console.error('❌ Error creating prescription:', error);
+//       throw new BadRequestException('Không thể tạo đơn thuốc: ' + error.message);
+//     } finally {
+//       await queryRunner.release();
+//     }
+//   }
 
-  //     // Create new medications
-  //     if (medications.length > 0) {
-  //       const medicationEntities = medications.map(med => 
-  //         this.medicationRepository.create({
-  //           ...med,
-  //           elderId: prescriptionData.elderId || (await this.findOne(id)).elderId,
-  //           prescriptionId: id,
-  //           prescribedBy: prescriptionData.prescribedBy || (await this.findOne(id)).prescribedBy,
-  //         })
-  //       );
+//   /**
+//    * 🔹 Cập nhật đơn thuốc (by first medication_id)
+//    */
+//   async update(medicationId: number, dto: UpdatePrescriptionDto): Promise<any> {
+//     const queryRunner = this.dataSource.createQueryRunner();
+//     await queryRunner.connect();
+//     await queryRunner.startTransaction();
 
-  //       await this.medicationRepository.save(medicationEntities);
-  //     }
-  //   }
+//     try {
+//       // Lấy medication đầu tiên để biết prescription_date và elder_id
+//       const firstMed = await this.medicationRepository.findOne({
+//         where: { medicationId },
+//       });
 
-  //   return this.findOne(id);
-  // }
-  async update(id: number, updatePrescriptionDto: UpdatePrescriptionDto): Promise<Prescription> {
-  const { medications, ...prescriptionData } = updatePrescriptionDto;
+//       if (!firstMed) {
+//         throw new NotFoundException('Prescription not found');
+//       }
 
-  // 🧩 Cập nhật đơn thuốc
-  await this.prescriptionRepository.update(id, {
-    ...prescriptionData,
-    prescriptionDate: prescriptionData.prescriptionDate
-      ? new Date(prescriptionData.prescriptionDate)
-      : undefined,
-    startDate: prescriptionData.startDate
-      ? new Date(prescriptionData.startDate)
-      : undefined,
-    endDate: prescriptionData.endDate
-      ? new Date(prescriptionData.endDate)
-      : undefined,
-  });
+//       // Xóa tất cả medications cùng group
+//       await queryRunner.manager.delete(Medication, {
+//         prescriptionDate: firstMed.prescriptionDate,
+//         elderId: firstMed.elderId,
+//         prescribedBy: firstMed.prescribedBy,
+//       });
 
-  // 💊 Nếu có danh sách thuốc gửi lên
-  if (medications) {
-    // Xóa thuốc cũ của đơn này
-    await this.medicationRepository.delete({ prescriptionId: id });
+//       // Tạo medications mới
+//       const medications = dto.medications.map((med) =>
+//         this.medicationRepository.create({
+//           elderId: dto.elderId || firstMed.elderId,
+//           name: med.name,
+//           dose: med.dose,
+//           frequency: med.frequency,
+//           time: med.time,
+//           startDate: dto.startDate || dto.prescriptionDate || firstMed.startDate,
+//           endDate: dto.endDate || firstMed.endDate,
+//           notes: med.notes,
+//           prescribedBy: dto.prescribedBy || firstMed.prescribedBy,
+//           diagnosis: dto.diagnosis || firstMed.diagnosis,
+//           prescriptionDate: dto.prescriptionDate || firstMed.prescriptionDate,
+//         })
+//       );
 
-    if (medications.length > 0) {
-      // ✅ Chỉ gọi DB 1 lần để lấy prescription hiện tại
-      const existing = await this.findOne(id);
+//       const savedMeds = await queryRunner.manager.save(Medication, medications);
+//       await queryRunner.commitTransaction();
 
-      // Tạo các entity thuốc mới
-      const medicationEntities = medications.map((med) =>
-        this.medicationRepository.create({
-          ...med,
-          elderId: prescriptionData.elderId || existing.elderId,
-          prescriptionId: id,
-          prescribedBy: prescriptionData.prescribedBy || existing.prescribedBy,
-        }),
-      );
+//       return this.formatPrescriptionGroup(savedMeds);
+//     } catch (error) {
+//       await queryRunner.rollbackTransaction();
+//       console.error('❌ Error updating prescription:', error);
+//       throw new BadRequestException('Không thể cập nhật đơn thuốc: ' + error.message);
+//     } finally {
+//       await queryRunner.release();
+//     }
+//   }
 
-      await this.medicationRepository.save(medicationEntities);
-    }
-  }
+//   /**
+//    * 🔹 Xóa đơn thuốc (by first medication_id)
+//    */
+//   async remove(medicationId: number): Promise<void> {
+//     const firstMed = await this.medicationRepository.findOne({
+//       where: { medicationId },
+//     });
 
-  return this.findOne(id);
-}
+//     if (!firstMed) {
+//       throw new NotFoundException('Prescription not found');
+//     }
 
-  async delete(id: number): Promise<void> {
-    // Delete associated medications first
-    await this.medicationRepository.delete({ prescriptionId: id });
-    
-    // Delete prescription
-    await this.prescriptionRepository.delete(id);
-  }
-}
+//     // Xóa tất cả medications cùng group
+//     const result = await this.medicationRepository.delete({
+//       prescriptionDate: firstMed.prescriptionDate,
+//       elderId: firstMed.elderId,
+//       prescribedBy: firstMed.prescribedBy,
+//     });
 
+//     if (result.affected === 0) {
+//       throw new NotFoundException('Prescription not found');
+//     }
+//   }
+
+//   /**
+//    * 🔹 Helper: Group medications thành prescriptions
+//    */
+//   private groupMedicationsByPrescription(medications: Medication[]): any[] {
+//     const grouped = new Map<string, Medication[]>();
+
+//     medications.forEach((med) => {
+//       const key = `${med.prescriptionDate}_${med.elderId}_${med.prescribedBy}`;
+//       if (!grouped.has(key)) {
+//         grouped.set(key, []);
+//       }
+//       grouped.get(key)!.push(med);
+//     });
+
+//     return Array.from(grouped.values()).map((meds) => this.formatPrescriptionGroup(meds));
+//   }
+
+//   /**
+//    * 🔹 Helper: Format group medications thành prescription object
+//    */
+//   private formatPrescriptionGroup(medications: Medication[]): any {
+//     if (medications.length === 0) return null;
+
+//     const first = medications[0];
+//     return {
+//       prescriptionId: first.medicationId, // Dùng medicationId đầu tiên
+//       prescriptionDate: first.prescriptionDate,
+//       elderId: first.elderId,
+//       prescribedBy: first.prescribedBy,
+//       diagnosis: first.diagnosis,
+//       startDate: first.startDate,
+//       endDate: first.endDate,
+//       elder: first.elder,
+//       prescriber: first.prescriber,
+//       medications: medications.map((med) => ({
+//         medicationId: med.medicationId,
+//         name: med.name,
+//         dose: med.dose,
+//         frequency: med.frequency,
+//         time: med.time,
+//         notes: med.notes,
+//       })),
+//     };
+//   }
+// }

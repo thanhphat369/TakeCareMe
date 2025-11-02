@@ -1,57 +1,49 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsNumber, IsString, IsArray, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+// import { IsNotEmpty, IsOptional, IsDateString, IsNumber, IsArray, ValidateNested } from 'class-validator';
+// import { Type } from 'class-transformer';
 
-export class CreateMedicationItemDto {
-  @IsNotEmpty()
-  @IsString()
-  name: string;
+// export class MedicationItemDto {
+//   @IsNotEmpty()
+//   name: string;
 
-  @IsOptional()
-  @IsString()
-  dose?: string;
+//   @IsOptional()
+//   dose?: string;
 
-  @IsOptional()
-  @IsString()
-  frequency?: string;
+//   @IsOptional()
+//   frequency?: string;
 
-  @IsOptional()
-  @IsString()
-  time?: string;
+//   @IsOptional()
+//   time?: string;
 
-  @IsOptional()
-  @IsString()
-  notes?: string;
-}
+//   @IsOptional()
+//   notes?: string;
+// }
 
-export class CreatePrescriptionDto {
-  @IsNumber()
-  elderId: number;
+// export class CreatePrescriptionDto {
+//   @IsNumber()
+//   @IsNotEmpty()
+//   elderId: number;
 
-  @IsNumber()
-  prescribedBy: number;
+//   @IsNumber()
+//   @IsNotEmpty()
+//   prescribedBy: number;
 
-  @IsOptional()
-  @IsString()
-  diagnosis?: string;
+//   @IsOptional()
+//   diagnosis?: string;
 
-  @IsOptional()
-  @IsString()
-  notes?: string;
+//   @IsDateString()
+//   @IsNotEmpty()
+//   prescriptionDate: string;
 
-  @IsDateString()
-  prescriptionDate: string;
+//   @IsDateString()
+//   @IsOptional()
+//   startDate?: string;
 
-  @IsOptional()
-  @IsDateString()
-  startDate?: string;
+//   @IsDateString()
+//   @IsOptional()
+//   endDate?: string;
 
-  @IsOptional()
-  @IsDateString()
-  endDate?: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateMedicationItemDto)
-  medications: CreateMedicationItemDto[];
-}
-
+//   @IsArray()
+//   @ValidateNested({ each: true })
+//   @Type(() => MedicationItemDto)
+//   medications: MedicationItemDto[];
+// }

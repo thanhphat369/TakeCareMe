@@ -14,7 +14,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { MedicationsModule } from './modules/medications/medications.module';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
-import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
+import { MedicalHistoryModule } from './modules/medical-history/medical-history.module';
+import { FamilyMembersModule  } from './modules/family-members/family-members.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -53,7 +54,9 @@ import { PrescriptionsModule } from './modules/prescriptions/prescriptions.modul
     MedicationsModule,
     AppointmentsModule,
     ProfilesModule,
-    PrescriptionsModule,
+    MedicalHistoryModule,
+    FamilyMembersModule,
+    
   ],
 })
 export class AppModule {}

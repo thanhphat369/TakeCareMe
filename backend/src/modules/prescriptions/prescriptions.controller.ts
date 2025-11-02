@@ -1,48 +1,62 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-} from '@nestjs/common';
-import { PrescriptionsService } from './prescriptions.service';
-import { CreatePrescriptionDto } from './dto/create-prescription.dto';
-import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
+// import {
+//   Controller,
+//   Get,
+//   Post,
+//   Body,
+//   Patch,
+//   Param,
+//   Delete,
+//   UseGuards,
+//   Query,
+// } from '@nestjs/common';
+// import { PrescriptionsService } from './prescriptions.service';
+// import { CreatePrescriptionDto } from './dto/create-prescription.dto';
+// import { UpdatePrescriptionDto } from './dto/update-prescription.dto';
+// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+// import { RolesGuard } from '../auth/guards/roles.guard';
+// import { Roles } from '../auth/decorators/roles.decorator';
+// import { UserRole } from '../../entities/user.entity';
 
-@Controller('prescriptions')
-export class PrescriptionsController {
-  constructor(private readonly prescriptionsService: PrescriptionsService) {}
+// @Controller('prescriptions')
+// @UseGuards(JwtAuthGuard, RolesGuard)
+// export class PrescriptionsController {
+//   constructor(private readonly prescriptionsService: PrescriptionsService) {}
 
-  @Get()
-  async findAll() {
-    return this.prescriptionsService.findAll();
-  }
+//   @Post()
+//   @Roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+//   create(@Body() createDto: CreatePrescriptionDto) {
+//     console.log('🔵 POST /prescriptions - Creating prescription');
+//     console.log('📦 Body:', createDto);
+//     return this.prescriptionsService.create(createDto);
+//   }
 
-  @Get('elder/:elderId')
-  async findByElder(@Param('elderId') elderId: number) {
-    return this.prescriptionsService.findByElder(elderId);
-  }
+//   @Get()
+//   findAll(@Query('elderId') elderId?: string) {
+//     if (elderId) {
+//       return this.prescriptionsService.findByElder(Number(elderId));
+//     }
+//     return this.prescriptionsService.findAll();
+//   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: number) {
-    return this.prescriptionsService.findOne(id);
-  }
+//   @Get('elder/:elderId')
+//   findByElder(@Param('elderId') elderId: string) {
+//     return this.prescriptionsService.findByElder(Number(elderId));
+//   }
 
-  @Post()
-  async create(@Body() dto: CreatePrescriptionDto) {
-    return this.prescriptionsService.create(dto);
-  }
+//   @Get(':id')
+//   findOne(@Param('id') id: string) {
+//     return this.prescriptionsService.findOne(Number(id));
+//   }
 
-  @Put(':id')
-  async update(@Param('id') id: number, @Body() dto: UpdatePrescriptionDto) {
-    return this.prescriptionsService.update(id, dto);
-  }
+//   @Patch(':id')
+//   @Roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+//   update(@Param('id') id: string, @Body() updateDto: UpdatePrescriptionDto) {
+//     return this.prescriptionsService.update(Number(id), updateDto);
+//   }
 
-  @Delete(':id')
-  async delete(@Param('id') id: number) {
-    return this.prescriptionsService.delete(id);
-  }
-}
-
+//   @Delete(':id')
+//   @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+//   remove(@Param('id') id: string) {
+//     return this.prescriptionsService.remove(Number(id));
+//   }
+// }

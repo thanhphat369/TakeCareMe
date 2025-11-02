@@ -11,7 +11,7 @@ import {
   HomeOutlined,
   ExclamationCircleOutlined
 } from '@ant-design/icons';
-import { FamilyMember } from '../types';
+import { FamilyMember } from '../types/family-member';
 
 interface FamilyMemberListProps {
   familyMembers: FamilyMember[];
@@ -34,9 +34,9 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
     try {
       setDeletingId(id);
       await onDelete(id);
-      message.success('Xóa người thân thành công');
+      message.success('X�a ngu?i th�n th�nh c�ng');
     } catch (error: any) {
-      message.error(error.message || 'Xóa thất bại');
+      message.error(error.message || 'X�a th?t b?i');
     } finally {
       setDeletingId(null);
     }
@@ -47,29 +47,29 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
   };
 
   const getStatusText = (status: string) => {
-    return status === 'Active' ? 'Hoạt động' : 'Không hoạt động';
+    return status === 'Active' ? 'Ho?t d?ng' : 'Kh�ng ho?t d?ng';
   };
 
   const getRelationshipColor = (relationship: string) => {
     const colors: { [key: string]: string } = {
       'Con trai': 'blue',
-      'Con gái': 'pink',
-      'Con dâu': 'purple',
-      'Con rể': 'cyan',
-      'Cháu trai': 'orange',
-      'Cháu gái': 'magenta',
-      'Anh/Chị': 'green',
-      'Em trai/Em gái': 'lime',
-      'Cháu nội': 'gold',
-      'Cháu ngoại': 'volcano',
-      'Người giám hộ': 'red',
-      'Khác': 'default',
+      'Con g�i': 'pink',
+      'Con d�u': 'purple',
+      'Con r?': 'cyan',
+      'Ch�u trai': 'orange',
+      'Ch�u g�i': 'magenta',
+      'Anh/Ch?': 'green',
+      'Em trai/Em g�i': 'lime',
+      'Ch�u n?i': 'gold',
+      'Ch�u ngo?i': 'volcano',
+      'Ngu?i gi�m h?': 'red',
+      'Kh�c': 'default',
     };
     return colors[relationship] || 'default';
   };
 
   const primaryMember = familyMembers.find(member => member.isPrimary);
-  const activeMembers = familyMembers.filter(member => member.status === 'Active');
+  const activeMembers = familyMembers.filter(member => member.family.status === 'Active');
 
   return (
     <div className="space-y-4">
@@ -78,7 +78,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="Tổng số người thân"
+              title="T?ng s? ngu?i th�n"
               value={familyMembers.length}
               prefix={<UserOutlined />}
             />
@@ -87,7 +87,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="Đang hoạt động"
+              title="�ang ho?t d?ng"
               value={activeMembers.length}
               prefix={<UserOutlined />}
               valueStyle={{ color: '#3f8600' }}
@@ -97,7 +97,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="Người liên hệ chính"
+              title="Ngu?i li�n h? ch�nh"
               value={primaryMember ? 1 : 0}
               prefix={<CrownOutlined />}
               valueStyle={{ color: '#cf1322' }}
@@ -114,7 +114,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
           onClick={onAdd}
           className="mb-4"
         >
-          Thêm người thân
+          Th�m ngu?i th�n
         </Button>
       </div>
 
@@ -122,10 +122,10 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
       {familyMembers.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Chưa có người thân nào"
+          description="Chua c� ngu?i th�n n�o"
         >
           <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-            Thêm người thân đầu tiên
+            Th�m ngu?i th�n d?u ti�n
           </Button>
         </Empty>
       ) : (
@@ -145,25 +145,25 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                     icon={<EditOutlined />}
                     onClick={() => onEdit(member)}
                   >
-                    Chỉnh sửa
+                    Ch?nh s?a
                   </Button>,
                   <Popconfirm
                     key="delete"
-                    title="Xác nhận xóa"
-                    description="Bạn có chắc chắn muốn xóa người thân này?"
+                    title="X�c nh?n x�a"
+                    description="B?n c� ch?c ch?n mu?n x�a ngu?i th�n n�y?"
                     icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
-                    onConfirm={() => handleDelete(member.id)}
-                    okText="Xóa"
-                    cancelText="Hủy"
+                    onConfirm={() => handleDelete(String(member.familyId))}
+                    okText="X�a"
+                    cancelText="H?y"
                     okButtonProps={{ danger: true }}
                   >
                     <Button
                       type="text"
                       danger
                       icon={<DeleteOutlined />}
-                      loading={deletingId === member.id}
+                      loading={deletingId === String(member.familyId)}
                     >
-                      Xóa
+                      X�a
                     </Button>
                   </Popconfirm>,
                 ]}
@@ -171,18 +171,18 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                 <div className="text-center mb-4">
                   <Avatar
                     size={64}
-                    src={member.avatar}
+                    src={member.family.avatar}
                     icon={<UserOutlined />}
                     className="mb-2"
                   />
-                  <div className="font-medium text-lg">{member.fullName}</div>
+                  <div className="font-medium text-lg">{member.family.fullName}</div>
                   <div className="flex justify-center items-center gap-2 mt-1">
                     <Tag color={getRelationshipColor(member.relationship)}>
                       {member.relationship}
                     </Tag>
                     {member.isPrimary && (
                       <Tag color="red" icon={<CrownOutlined />}>
-                        Liên hệ chính
+                        Li�n h? ch�nh
                       </Tag>
                     )}
                   </div>
@@ -191,35 +191,29 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                 <div className="space-y-2">
                   <div className="flex items-center text-sm">
                     <MailOutlined className="mr-2 text-gray-500" />
-                    <span className="truncate">{member.email}</span>
+                    <span className="truncate">{member.family.email}</span>
                   </div>
                   
                   <div className="flex items-center text-sm">
                     <PhoneOutlined className="mr-2 text-gray-500" />
-                    <span>{member.phone}</span>
+                    <span>{member.family.phone}</span>
                   </div>
                   
-                  {member.address && (
+                  {member.family.address && (
                     <div className="flex items-start text-sm">
                       <HomeOutlined className="mr-2 text-gray-500 mt-0.5" />
-                      <span className="truncate">{member.address}</span>
+                      <span className="truncate">{member.family.address}</span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
-                    <Tag color={getStatusColor(member.status)}>
-                      {getStatusText(member.status)}
+                    <Tag color={getStatusColor(member.family.status)}>
+                      {getStatusText(member.family.status)}
                     </Tag>
                     <span className="text-xs text-gray-500">
                       {new Date(member.createdAt).toLocaleDateString('vi-VN')}
                     </span>
                   </div>
-
-                  {member.notes && (
-                    <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                      <strong>Ghi chú:</strong> {member.notes}
-                    </div>
-                  )}
                 </div>
               </Card>
             </List.Item>

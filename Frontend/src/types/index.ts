@@ -27,6 +27,7 @@ export interface Elderly {
   
 }
 
+
 export interface Medication {
   medicationId: number;
   elderId: number;
@@ -107,7 +108,6 @@ export interface UpdatePrescriptionRequest {
   status?: string;
   medications?: MedicationItem[];
 }
-
 // Staff Types
 export interface Staff {
   id: string;
