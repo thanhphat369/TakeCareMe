@@ -43,6 +43,9 @@ export class Elder {
   @Column({ type: 'int', nullable: true })
   age: Date;
   
+  @Column({ type: 'nvarchar', length: 255, nullable: true })
+  avatar: string;
+  
   @Column({ type: 'varchar', length: 15, nullable: true })
   phone: string;
 
@@ -51,13 +54,6 @@ export class Elder {
 
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   address: string;
-
-  @Column({ name: 'contact_person_id', nullable: true })
-  contactPersonId: number;
-
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'contact_person_id' })
-  contactPerson: User;
 
   @Column({ type: 'nvarchar', length: 20, default: 'Active' })
   status: string;
@@ -92,7 +88,6 @@ export class Elder {
   @OneToMany(() => FamilyElder, fe => fe.elder)
   familyLinks: FamilyElder[];
 
-
-  // @OneToMany(() => Prescription, prescription => prescription.elder)
-  // prescriptions: Prescription[];
+  @OneToMany(() => FamilyElder, (fe) => fe.elder)
+  familyRelations: FamilyElder[];
 }

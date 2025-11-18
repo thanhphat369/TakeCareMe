@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Card, 
   Table, 
@@ -57,6 +57,30 @@ interface AlertItem {
 }
 
 const AlertsManagement: React.FC = () => {
+  const priorityOrder: Record<'low' | 'medium' | 'high' | 'critical', number> = {
+    low: 0,
+    medium: 1,
+    high: 2,
+    critical: 3,
+  };
+  const [emergencyConfig, setEmergencyConfig] = useState<{ enabled: boolean; minimumLevelForEmergency: 'low' | 'medium' | 'high' | 'critical'; }>(() => {
+    try {
+      const raw = localStorage.getItem('emergencyAlertConfig');
+      return raw
+        ? JSON.parse(raw)
+        : { enabled: true, minimumLevelForEmergency: 'high' as const };
+    } catch {
+      return { enabled: true, minimumLevelForEmergency: 'high' as const };
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('emergencyAlertConfig', JSON.stringify(emergencyConfig));
+    } catch {
+      // ignore persistence errors
+    }
+  }, [emergencyConfig]);
   const [alerts, setAlerts] = useState<AlertItem[]>([
     {
       id: '1',
@@ -258,7 +282,9 @@ const AlertsManagement: React.FC = () => {
   const getStatistics = () => {
     const total = alerts.length;
     const active = alerts.filter(a => a.status === 'active').length;
-    const critical = alerts.filter(a => a.priority === 'critical').length;
+    const threshold = emergencyConfig.minimumLevelForEmergency as 'low' | 'medium' | 'high' | 'critical';
+    const minOrder = priorityOrder[threshold];
+    const critical = alerts.filter(a => priorityOrder[a.priority] >= minOrder).length;
     const resolved = alerts.filter(a => a.status === 'resolved').length;
 
     return { total, active, critical, resolved };
@@ -276,6 +302,39 @@ const AlertsManagement: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Quản lý cảnh báo</h1>
         <p className="text-gray-600">Theo dõi và xử lý các cảnh báo khẩn cấp và thông báo hệ thống</p>
       </div>
+
+      {/* Cấu hình ngưỡng cảnh báo khẩn cấp */}
+      <Card>
+        <div className="flex items-center justify-between">
+          <div className="font-medium">Thiết lập mức độ hiển thị cảnh báo khẩn cấp</div>
+          <Space>
+            <span>Kích hoạt khẩn cấp</span>
+            <Select
+              value={emergencyConfig.enabled ? 'on' : 'off'}
+              style={{ width: 120 }}
+              onChange={(val) => {
+                setEmergencyConfig((prev) => ({ ...prev, enabled: val === 'on' }));
+              }}
+            >
+              <Option value="on">Bật</Option>
+              <Option value="off">Tắt</Option>
+            </Select>
+            <span>Ngưỡng tối thiểu</span>
+            <Select
+              style={{ width: 160 }}
+              value={emergencyConfig.minimumLevelForEmergency}
+              onChange={(val: 'low' | 'medium' | 'high' | 'critical') => {
+                setEmergencyConfig((prev) => ({ ...prev, minimumLevelForEmergency: val }));
+              }}
+            >
+              <Option value="low">LOW — Hiển thị tất cả</Option>
+              <Option value="medium">MEDIUM — Từ Vừa trở lên</Option>
+              <Option value="high">HIGH — Từ Cao trở lên</Option>
+              <Option value="critical">CRITICAL — Chỉ Khẩn cấp</Option>
+            </Select>
+          </Space>
+        </div>
+      </Card>
 
       {/* Statistics */}
       <Row gutter={[16, 16]}>
@@ -318,11 +377,11 @@ const AlertsManagement: React.FC = () => {
         </Col>
       </Row>
 
-      {/* Critical Alerts */}
-      {stats.critical > 0 && (
+      {/* Critical Alerts (Admin-configurable threshold) */}
+      {emergencyConfig.enabled && stats.critical > 0 && (
         <Alert
           message="Cảnh báo khẩn cấp"
-          description={`Có ${stats.critical} cảnh báo khẩn cấp cần xử lý ngay lập tức!`}
+          description={`Có ${stats.critical} cảnh báo có mức độ ≥ '${emergencyConfig.minimumLevelForEmergency.toUpperCase()}' cần xử lý ngay lập tức!`}
           type="error"
           icon={<ExclamationCircleOutlined />}
           showIcon
@@ -362,7 +421,7 @@ const AlertsManagement: React.FC = () => {
               <TabPane tab={`Khẩn cấp (${stats.critical})`} key="critical">
                 <Table 
                   columns={columns} 
-                  dataSource={alerts.filter(a => a.priority === 'critical')}
+                  dataSource={alerts.filter(a => priorityOrder[a.priority] >= priorityOrder[emergencyConfig.minimumLevelForEmergency as 'low' | 'medium' | 'high' | 'critical'])}
                   rowKey="id"
                   pagination={{ pageSize: 10 }}
                 />

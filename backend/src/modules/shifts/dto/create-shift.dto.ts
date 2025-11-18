@@ -5,10 +5,10 @@ export class CreateShiftDto {
   staffId: number;
 
   @IsDateString({}, { message: 'Thời gian bắt đầu không hợp lệ' })
-  startTime: Date;
+  startTime: string;
 
   @IsDateString({}, { message: 'Thời gian kết thúc không hợp lệ' })
-  endTime: Date;
+  endTime: string;
 
   @IsOptional()
   location?: string;

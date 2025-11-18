@@ -35,12 +35,12 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
         : { ...values, avatar: avatarUrl } as CreateFamilyMemberRequest;
 
       await onSave(submitData);
-      message.success(isEdit ? 'C?p nh?t th�nh c�ng' : 'Th�m ngu?i th�n th�nh c�ng');
+      message.success(isEdit ? 'Cập nhật thành công' : 'Thêm người mới thành công');
       form.resetFields();
       setAvatarUrl('');
       onClose();
     } catch (error: any) {
-      message.error(error.message || 'C� l?i x?y ra');
+      message.error(error.message || 'Có lỗi xảy ra, vui lòng thử lại');
     } finally {
       setLoading(false);
     }
@@ -60,17 +60,17 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
 
   const relationshipOptions = [
     { value: 'Con trai', label: 'Con trai' },
-    { value: 'Con g�i', label: 'Con g�i' },
-    { value: 'Con d�u', label: 'Con d�u' },
-    { value: 'Con r?', label: 'Con r?' },
-    { value: 'Ch�u trai', label: 'Ch�u trai' },
-    { value: 'Ch�u g�i', label: 'Ch�u g�i' },
-    { value: 'Anh/Ch?', label: 'Anh/Ch?' },
-    { value: 'Em trai/Em g�i', label: 'Em trai/Em g�i' },
-    { value: 'Ch�u n?i', label: 'Ch�u n?i' },
-    { value: 'Ch�u ngo?i', label: 'Ch�u ngo?i' },
-    { value: 'Ngu?i gi�m h?', label: 'Ngu?i gi�m h?' },
-    { value: 'Kh�c', label: 'Kh�c' },
+    { value: 'Con gái', label: 'Con gái' },
+    { value: 'Con dâu', label: 'Con dâu' },
+    { value: 'Con rể', label: 'Con rể' },
+    { value: 'Cháu trai', label: 'Cháu trai' },
+    { value: 'Cháu gái', label: 'Cháu gái' },
+    { value: 'Anh/Chị', label: 'Anh/Chị' },
+    { value: 'Em trai/Em gái', label: 'Em trai/Em gái' },
+    { value: 'Cháu nội', label: 'Cháu nội' },
+    { value: 'Cháu ngoại', label: 'Cháu ngoại' },
+    { value: 'Nguời giám hộ', label: 'Nguời giám hộ' },
+    { value: 'Khác', label: 'Khác' },
   ];
 
   return (
@@ -78,7 +78,7 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
       title={
         <div className="flex items-center">
           <UserOutlined className="mr-2 text-blue-500" />
-          {isEdit ? 'Ch?nh s?a th�ng tin ngu?i th�n' : 'Th�m ngu?i th�n m?i'}
+          {isEdit ? 'Chỉnh sửa thông tin người thân' : 'Thêm người thân mới'}
         </div>
       }
       open={visible}
@@ -88,11 +88,10 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
           H?y
         </Button>,
         <Button key="submit" type="primary" loading={loading} onClick={handleSubmit}>
-          {isEdit ? 'C?p nh?t' : 'Th�m m?i'}
+          {isEdit ? 'Cập nhật' : 'Thêm mới'}
         </Button>,
       ]}
       width={700}
-      destroyOnClose
     >
       <Form
         form={form}
@@ -128,17 +127,17 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               beforeUpload={(file) => {
                 const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
                 if (!isJpgOrPng) {
-                  message.error('Ch? ch?p nh?n file JPG/PNG!');
+                  message.error('Chỉ chấp nhận file JPG/PNG!');
                 }
                 const isLt2M = file.size! / 1024 / 1024 < 2;
                 if (!isLt2M) {
-                  message.error('K�ch thu?c file ph?i nh? hon 2MB!');
+                  message.error('Kích thước file phải nhỏ hơn 2MB!');
                 }
                 return isJpgOrPng && isLt2M;
               }}
             >
               <Button type="dashed" icon={<PlusOutlined />}>
-                Th�m ?nh
+                Thêm ảnh
               </Button>
             </Upload>
           </div>
@@ -148,22 +147,22 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="fullName"
-              label="H? v� t�n"
+              label="Họ và tên"
               rules={[
-                { required: true, message: 'Vui l�ng nh?p h? t�n' },
-                { min: 2, message: 'H? t�n ph?i c� �t nh?t 2 k� t?' },
+                { required: true, message: 'Vui lòng nhập họ và tên' },
+                { min: 2, message: 'Họ và tên phải có ít nhất 2 kí tự' },
               ]}
             >
-              <Input prefix={<UserOutlined />} placeholder="Nh?p h? v� t�n" />
+              <Input prefix={<UserOutlined />} placeholder="Nhập họ và tên" />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
               name="relationship"
-              label="M?i quan h?"
-              rules={[{ required: true, message: 'Vui l�ng ch?n m?i quan h?' }]}
+              label="Mối quan hệ"
+              rules={[{ required: true, message: 'Vui lòng chọn quan hệ' }]}
             >
-              <Select placeholder="Ch?n m?i quan h?">
+              <Select placeholder="Chọn mối quan hệ">
                 {relationshipOptions.map(option => (
                   <Select.Option key={option.value} value={option.value}>
                     {option.label}
@@ -180,23 +179,23 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
               name="email"
               label="Email"
               rules={[
-                { required: true, message: 'Vui l�ng nh?p email' },
-                { type: 'email', message: 'Email kh�ng h?p l?' },
+                { required: true, message: 'Vui lòng nhập email' },
+                { type: 'email', message: 'Email không hợp lệ' },
               ]}
             >
-              <Input prefix={<MailOutlined />} placeholder="Nh?p email" />
+              <Input prefix={<MailOutlined />} placeholder="Nhập email" />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item
               name="phone"
-              label="S? di?n tho?i"
+              label="Số điện thoại"
               rules={[
-                { required: true, message: 'Vui l�ng nh?p s? di?n tho?i' },
-                { pattern: /^[0-9+\-\s()]+$/, message: 'S? di?n tho?i kh�ng h?p l?' },
+                { required: true, message: 'Vui lòng nhập số điện thoại' },
+                { pattern: /^[0-9+\-\s()]+$/, message: 'Số điện thoại không hợp lệ' },
               ]}
             >
-              <Input prefix={<PhoneOutlined />} placeholder="Nh?p s? di?n tho?i" />
+              <Input prefix={<PhoneOutlined />} placeholder="Nhập số điện thoại" />
             </Form.Item>
           </Col>
         </Row>
@@ -204,22 +203,22 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
         {!isEdit && (
           <Form.Item
             name="password"
-            label="M?t kh?u"
+            label="Mật khẩu"
             rules={[
-              { required: true, message: 'Vui l�ng nh?p m?t kh?u' },
-              { min: 6, message: 'M?t kh?u ph?i c� �t nh?t 6 k� t?' },
+              { required: true, message: 'Vui lòng nhập mật khẩu ' },
+              { min: 6, message: 'Mật khẩu phải có ít nhất 6 kí tự' },
             ]}
           >
-            <Input.Password placeholder="Nh?p m?t kh?u" />
+            <Input.Password placeholder="Nhập mật khẩu" />
           </Form.Item>
         )}
 
         <Form.Item
           name="address"
-          label="�?a ch?"
+          label="Địa chỉ"
         >
           <Input.TextArea 
-            placeholder="Nh?p d?a ch? (t�y ch?n)" 
+            placeholder="Nhập địa chỉ" 
             rows={2}
           />
         </Form.Item>
@@ -228,12 +227,12 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
           <Col span={12}>
             <Form.Item
               name="isPrimary"
-              label="Ngu?i li�n h? ch�nh"
+              label="Người liên hệ chính"
               valuePropName="checked"
             >
               <Switch 
-                checkedChildren="C�" 
-                unCheckedChildren="Kh�ng"
+                checkedChildren="Có" 
+                unCheckedChildren="Không"
               />
             </Form.Item>
           </Col>
@@ -241,11 +240,11 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
             <Col span={12}>
               <Form.Item
                 name="status"
-                label="Tr?ng th�i"
+                label="Trạng thái"
               >
                 <Select>
-                  <Select.Option value="Active">Ho?t d?ng</Select.Option>
-                  <Select.Option value="Inactive">Kh�ng ho?t d?ng</Select.Option>
+                  <Select.Option value="Active">Hoạt động</Select.Option>
+                  <Select.Option value="Inactive">Không hoạt động</Select.Option>
                 </Select>
               </Form.Item>
             </Col>
@@ -254,10 +253,10 @@ const FamilyMemberModal: React.FC<FamilyMemberModalProps> = ({
 
         <Form.Item
           name="notes"
-          label="Ghi ch�"
+          label="Ghi chú"
         >
           <Input.TextArea 
-            placeholder="Ghi ch� th�m v? ngu?i th�n (t�y ch?n)" 
+            placeholder="Ghi chú thêm nguời thân (tùy chọn)" 
             rows={3}
           />
         </Form.Item>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Descriptions, Tag, Card, Row, Col, Statistic, Timeline } from 'antd';
+import { Modal, Descriptions, Tag, Card, Row, Col, Statistic, Timeline, Avatar } from 'antd';
 import {
   UserOutlined,
   PhoneOutlined,
@@ -68,6 +68,16 @@ const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
     return shiftMap[shift] || shift;
   };
 
+  // Get avatar URL - handle both relative and absolute paths
+  const getAvatarUrl = () => {
+    if (!staff.avatar) return undefined;
+    if (staff.avatar.startsWith('http')) {
+      return staff.avatar;
+    }
+    const apiUrl = process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+    return `${apiUrl}${staff.avatar.startsWith('/') ? staff.avatar : '/' + staff.avatar}`;
+  };
+
   return (
     <Modal
       title={
@@ -82,6 +92,18 @@ const StaffDetailModal: React.FC<StaffDetailModalProps> = ({
       width={900}
     >
       <div className="space-y-6">
+        {/* Avatar Section */}
+        <Card>
+          <div className="flex items-center justify-center mb-4">
+            <Avatar
+              size={120}
+              src={getAvatarUrl()}
+              icon={<UserOutlined />}
+              className="border-4 border-blue-200"
+            />
+          </div>
+        </Card>
+
         {/* Basic Info */}
         <Card>
           <Descriptions bordered column={2}>

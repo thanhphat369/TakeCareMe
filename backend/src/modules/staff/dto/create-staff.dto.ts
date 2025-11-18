@@ -68,4 +68,7 @@ export class CreateStaffDto {
 
   @IsOptional()
   notes?: string;
+
+  @IsOptional()
+  avatar?: string;
 }

@@ -14,7 +14,7 @@ import { UpdateFamilyMemberDto } from './dto/update-family-member.dto';
 
 @Controller('family-members')
 export class FamilyMembersController {
-  constructor(private readonly service: FamilyMembersService) {}
+  constructor(private readonly service: FamilyMembersService) { }
 
   @Post(':elderId')
   create(
@@ -43,5 +43,10 @@ export class FamilyMembersController {
     @Param('elderId', ParseIntPipe) elderId: number,
   ) {
     return this.service.remove(familyId, elderId);
+  }
+
+  @Get('elder/:elderId/primary')
+    findPrimaryByElder(@Param('elderId', ParseIntPipe) elderId: number) {
+    return this.service.findPrimaryByElder(elderId);
   }
 }

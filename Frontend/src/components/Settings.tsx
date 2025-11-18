@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Switch, Select, message, Tabs, Row, Col, Divider } from 'antd';
 import { SaveOutlined, UserOutlined, BellOutlined, SecurityScanOutlined, DatabaseOutlined } from '@ant-design/icons';
+import EmergencyAlertSettings from './EmergencyAlertSettings';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -163,6 +164,10 @@ const Settings: React.FC = () => {
           Lưu cài đặt
         </Button>
       </Form>
+
+      <div style={{ marginTop: 16 }}>
+        <EmergencyAlertSettings />
+      </div>
     </Card>
   );
 

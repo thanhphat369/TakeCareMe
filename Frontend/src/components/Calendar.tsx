@@ -1,34 +1,154 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Card, Modal, Form, Input, Select, Button, message, Tag } from 'antd';
+import { Card, Modal, Form, Input, Select, Button, message, Tag, DatePicker } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { mockAppointments, mockElderly, mockCaregivers } from '../data/mockData';
-import { Appointment } from '../types';
+import { Appointment, CreateAppointmentDto } from '../api/appointments';
+import { getAppointments, createAppointment, updateAppointment, deleteAppointment } from '../api/appointments';
+import { fetchEldersController } from '../api/elders';
+import { getUsers, getDoctorsAndStaff } from '../api/users';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
 
+interface Elder {
+  id: string;
+  elderId: number;
+  fullName: string;
+  age?: number;
+}
+
+interface User {
+  userId: number;
+  fullName: string;
+  role: string;
+}
+
 const Calendar: React.FC = () => {
-  const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [elders, setElders] = useState<Elder[]>([]);
+  const [doctors, setDoctors] = useState<User[]>([]);
+  const [staffNurses, setStaffNurses] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [form] = Form.useForm();
-  
+  const [careType, setCareType] = useState<'Doctor' | 'Nurse' | undefined>(undefined);
+  const [currentUser, setCurrentUser] = useState<{ userId: number; role: string } | null>(null);
 
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case 'checkup':
-        return '#3b82f6';
-      case 'medication':
-        return '#10b981';
-      case 'exercise':
-        return '#f59e0b';
-      case 'social':
-        return '#8b5cf6';
-      case 'emergency':
-        return '#ef4444';
+  // Load current user from localStorage
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+      try {
+        const parsed = JSON.parse(userData);
+        setCurrentUser({
+          userId: parsed.userId || parsed.id,
+          role: parsed.role,
+        });
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, []);
+
+  // Load initial data
+  useEffect(() => {
+    loadData();
+  }, [currentUser]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Determine which users endpoint to call based on user role
+      let usersPromise: Promise<any>;
+      if (!currentUser) {
+        // If user not loaded yet, try to get doctors and staff (safer fallback)
+        usersPromise = getDoctorsAndStaff().catch(() => getUsers());
+      } else if (currentUser.role === 'Doctor' || currentUser.role === 'Staff' || currentUser.role === 'Nurse') {
+        // Doctor and Staff can only access doctors-and-staff endpoint
+        usersPromise = getDoctorsAndStaff();
+      } else {
+        // Admin and SuperAdmin can access all users
+        usersPromise = getUsers();
+      }
+      
+      const [appointmentsResponse, eldersData, usersData] = await Promise.all([
+        getAppointments(),
+        fetchEldersController(),
+        usersPromise,
+      ]);
+
+      // Handle appointments response - might be array or wrapped in data object
+      let appointmentsData: Appointment[] = [];
+      if (Array.isArray(appointmentsResponse)) {
+        appointmentsData = appointmentsResponse;
+      } else if (appointmentsResponse && typeof appointmentsResponse === 'object' && 'data' in appointmentsResponse) {
+        appointmentsData = (appointmentsResponse as any).data || [];
+      }
+
+      // Filter appointments based on user role
+      let filteredAppointments = appointmentsData;
+      if (currentUser) {
+        if (currentUser.role === 'Doctor') {
+          // Bác sĩ chỉ thấy lịch của chính mình
+          filteredAppointments = appointmentsData.filter(
+            (apt) => apt.doctorId === currentUser.userId
+          );
+        } else if (currentUser.role === 'Staff' || currentUser.role === 'Nurse') {
+          // Điều dưỡng/nhân viên chỉ thấy lịch của chính mình
+          filteredAppointments = appointmentsData.filter(
+            (apt) => apt.nurseId === currentUser.userId
+          );
+        }
+        // SuperAdmin và Admin thấy tất cả lịch (không cần filter)
+      }
+
+      setAppointments(filteredAppointments);
+      
+      // Map elders
+      const mappedElders: Elder[] = eldersData.map((elder: any) => ({
+        id: elder.id,
+        elderId: parseInt(elder.id),
+        fullName: elder.fullName,
+        age: elder.age,
+      }));
+      setElders(mappedElders);
+
+      // Filter doctors and staff/nurses
+      const doctorsList = usersData
+        .filter((user: any) => user.role === 'Doctor')
+        .map((user: any) => ({
+          userId: user.userId || user.id,
+          fullName: user.fullName,
+          role: user.role,
+        }));
+      setDoctors(doctorsList);
+
+      const staffList = usersData
+        .filter((user: any) => user.role === 'Staff' || user.role === 'Nurse')
+        .map((user: any) => ({
+          userId: user.userId || user.id,
+          fullName: user.fullName,
+          role: user.role,
+        }));
+      setStaffNurses(staffList);
+    } catch (error: any) {
+      message.error('Không thể tải dữ liệu: ' + (error.message || 'Lỗi không xác định'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getEventColor = (careType?: string) => {
+    switch (careType) {
+      case 'Doctor':
+        return '#3b82f6'; // Blue for doctor checkup
+      case 'Nurse':
+        return '#10b981'; // Green for nurse care
       default:
         return '#6b7280';
     }
@@ -36,10 +156,11 @@ const Calendar: React.FC = () => {
 
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'scheduled':
         return 'blue';
       case 'in-progress':
+      case 'in_progress':
         return 'orange';
       case 'completed':
         return 'green';
@@ -51,88 +172,135 @@ const Calendar: React.FC = () => {
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'scheduled':
         return 'Đã lên lịch';
       case 'in-progress':
+      case 'in_progress':
         return 'Đang thực hiện';
       case 'completed':
         return 'Hoàn thành';
       case 'cancelled':
         return 'Đã hủy';
       default:
-        return status;
+        return status || 'Chưa xác định';
     }
   };
   
   const events = useMemo(() => {
-    return appointments.map(appointment => ({
-      id: appointment.id,
-      title: appointment.title,
-      start: appointment.start,
-      end: appointment.end,
-      backgroundColor: getEventColor(appointment.type),
-      borderColor: getEventColor(appointment.type),
-      extendedProps: {
-        ...appointment,
-        elderly: mockElderly.find(e => e.id === appointment.elderlyId),
-        caregiver: mockCaregivers.find(c => c.id === appointment.caregiverId),
-      }
-    }));
-  }, [appointments]);
+    return appointments.map(appointment => {
+      const elderName = appointment.elder?.fullName || elders.find(e => e.elderId === appointment.elderId)?.fullName || 'Chưa xác định';
+      const careProviderName = appointment.careType === 'Doctor' 
+        ? (appointment.doctor?.fullName || doctors.find(d => d.userId === appointment.doctorId)?.fullName || '')
+        : (appointment.nurse?.fullName || staffNurses.find(s => s.userId === appointment.nurseId)?.fullName || '');
+      
+      const title = appointment.careType === 'Doctor' 
+        ? `Khám: ${elderName} - BS. ${careProviderName}`
+        : `Chăm sóc: ${elderName} - ĐD. ${careProviderName}`;
+
+      return {
+        id: String(appointment.appointmentId),
+        title: title,
+        start: appointment.visitDate,
+        end: appointment.nextVisitDate || appointment.visitDate,
+        backgroundColor: getEventColor(appointment.careType),
+        borderColor: getEventColor(appointment.careType),
+        extendedProps: {
+          ...appointment,
+        }
+      };
+    });
+  }, [appointments, elders, doctors, staffNurses]);
 
   
 
   const handleDateSelect = (selectInfo: any) => {
     setEditingAppointment(null);
+    setCareType(undefined);
     setIsModalVisible(true);
     form.setFieldsValue({
-      start: selectInfo.start,
-      end: selectInfo.end,
+      visitDate: dayjs(selectInfo.start),
+      careType: undefined,
     });
   };
 
   const handleEventClick = (clickInfo: any) => {
-    const appointment = clickInfo.event.extendedProps;
+    const appointment = clickInfo.event.extendedProps as Appointment;
     setEditingAppointment(appointment);
+    setCareType(appointment.careType);
     setIsModalVisible(true);
     form.setFieldsValue({
-      ...appointment,
-      start: new Date(appointment.start),
-      end: new Date(appointment.end),
+      elderId: appointment.elderId,
+      careType: appointment.careType,
+      doctorId: appointment.doctorId,
+      nurseId: appointment.nurseId,
+      visitDate: appointment.visitDate ? dayjs(appointment.visitDate) : undefined,
+      nextVisitDate: appointment.nextVisitDate ? dayjs(appointment.nextVisitDate) : undefined,
+      notes: appointment.notes,
+      status: appointment.status,
     });
   };
 
-  const handleModalOk = () => {
-    form.validateFields().then(values => {
-      const newAppointment: Appointment = {
-        ...values,
-        id: editingAppointment?.id || Date.now().toString(),
-        start: values.start ? values.start.toDate() : new Date(),
-        end: values.end ? values.end.toDate() : new Date(),
-        createdAt: editingAppointment?.createdAt || new Date(),
-        updatedAt: new Date(),
+  const handleModalOk = async () => {
+    try {
+      const values = await form.validateFields();
+      
+      const appointmentData: CreateAppointmentDto = {
+        elderId: values.elderId,
+        careType: values.careType,
+        visitDate: values.visitDate ? dayjs(values.visitDate).toISOString() : new Date().toISOString(),
+        nextVisitDate: values.nextVisitDate ? dayjs(values.nextVisitDate).toISOString() : undefined,
+        notes: values.notes,
+        status: values.status || 'Scheduled',
       };
 
+      if (values.careType === 'Doctor') {
+        appointmentData.doctorId = values.doctorId;
+        appointmentData.nurseId = undefined;
+      } else if (values.careType === 'Nurse') {
+        appointmentData.nurseId = values.nurseId;
+        appointmentData.doctorId = undefined;
+      }
+
       if (editingAppointment) {
-        setAppointments(appointments.map(item => 
-          item.id === editingAppointment.id ? newAppointment : item
-        ));
+        await updateAppointment(editingAppointment.appointmentId, appointmentData);
         message.success('Cập nhật cuộc hẹn thành công');
       } else {
-        setAppointments([...appointments, newAppointment]);
+        await createAppointment(appointmentData);
         message.success('Thêm cuộc hẹn thành công');
       }
 
+      await loadData();
       setIsModalVisible(false);
+      setCareType(undefined);
       form.resetFields();
-    });
+    } catch (error: any) {
+      if (error.errorFields) {
+        // Validation errors
+        return;
+      }
+      message.error('Lỗi: ' + (error.message || 'Không thể lưu cuộc hẹn'));
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAppointments(appointments.filter(item => item.id !== id));
-    message.success('Xóa cuộc hẹn thành công');
-    setIsModalVisible(false);
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteAppointment(id);
+      message.success('Xóa cuộc hẹn thành công');
+      await loadData();
+      setIsModalVisible(false);
+      form.resetFields();
+    } catch (error: any) {
+      message.error('Lỗi: ' + (error.message || 'Không thể xóa cuộc hẹn'));
+    }
+  };
+
+  const handleCareTypeChange = (value: 'Doctor' | 'Nurse') => {
+    setCareType(value);
+    form.setFieldsValue({
+      doctorId: undefined,
+      nurseId: undefined,
+    });
   };
 
   return (
@@ -147,6 +315,7 @@ const Calendar: React.FC = () => {
           icon={<PlusOutlined />}
           onClick={() => {
             setEditingAppointment(null);
+            setCareType(undefined);
             setIsModalVisible(true);
             form.resetFields();
           }}
@@ -161,23 +330,11 @@ const Calendar: React.FC = () => {
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center">
             <div className="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-            <span className="text-sm">Khám sức khỏe</span>
+            <span className="text-sm">Bác sĩ khám</span>
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-green-500 rounded mr-2"></div>
-            <span className="text-sm">Uống thuốc</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-            <span className="text-sm">Tập thể dục</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-purple-500 rounded mr-2"></div>
-            <span className="text-sm">Hoạt động xã hội</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-4 h-4 bg-red-500 rounded mr-2"></div>
-            <span className="text-sm">Khẩn cấp</span>
+            <span className="text-sm">Điều dưỡng chăm sóc</span>
           </div>
         </div>
       </Card>
@@ -216,24 +373,32 @@ const Calendar: React.FC = () => {
         title={editingAppointment ? 'Chỉnh sửa cuộc hẹn' : 'Thêm cuộc hẹn mới'}
         open={isModalVisible}
         onOk={handleModalOk}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => {
+          setIsModalVisible(false);
+          setCareType(undefined);
+          form.resetFields();
+        }}
         width={600}
         okText="Lưu"
         cancelText="Hủy"
         footer={[
-          <Button key="cancel" onClick={() => setIsModalVisible(false)}>
+          <Button key="cancel" onClick={() => {
+            setIsModalVisible(false);
+            setCareType(undefined);
+            form.resetFields();
+          }}>
             Hủy
           </Button>,
           editingAppointment && (
             <Button
               key="delete"
               danger
-              onClick={() => handleDelete(editingAppointment.id)}
+              onClick={() => handleDelete(editingAppointment.appointmentId)}
             >
               Xóa
             </Button>
           ),
-          <Button key="submit" type="primary" onClick={handleModalOk}>
+          <Button key="submit" type="primary" onClick={handleModalOk} loading={loading}>
             Lưu
           </Button>,
         ]}
@@ -242,8 +407,7 @@ const Calendar: React.FC = () => {
           form={form}
           layout="vertical"
           initialValues={{
-            type: 'checkup',
-            status: 'scheduled',
+            status: 'Scheduled',
           }}
         >
           <div className="mb-4 p-4 bg-gray-50 rounded-lg">
@@ -251,10 +415,17 @@ const Calendar: React.FC = () => {
             {editingAppointment && (
               <div className="space-y-2 text-sm">
                 <div>
-                  <strong>Người cao tuổi:</strong> {mockElderly.find(e => e.id === editingAppointment.elderlyId)?.fullName}
+                  <strong>Người cao tuổi:</strong> {editingAppointment.elder?.fullName || elders.find(e => e.elderId === editingAppointment.elderId)?.fullName || 'Chưa xác định'}
                 </div>
                 <div>
-                  <strong>Người chăm sóc:</strong> {mockCaregivers.find(c => c.id === editingAppointment.caregiverId)?.name}
+                  <strong>Loại:</strong> {editingAppointment.careType === 'Doctor' ? 'Bác sĩ khám' : 'Điều dưỡng chăm sóc'}
+                </div>
+                <div>
+                  <strong>Người thực hiện:</strong> {
+                    editingAppointment.careType === 'Doctor' 
+                      ? (editingAppointment.doctor?.fullName || doctors.find(d => d.userId === editingAppointment.doctorId)?.fullName || 'Chưa xác định')
+                      : (editingAppointment.nurse?.fullName || staffNurses.find(s => s.userId === editingAppointment.nurseId)?.fullName || 'Chưa xác định')
+                  }
                 </div>
                 <div>
                   <strong>Trạng thái:</strong> 
@@ -267,74 +438,115 @@ const Calendar: React.FC = () => {
           </div>
 
           <Form.Item
-            name="title"
-            label="Tiêu đề"
-            rules={[{ required: true, message: 'Vui lòng nhập tiêu đề' }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item
-            name="type"
-            label="Loại cuộc hẹn"
-            rules={[{ required: true, message: 'Vui lòng chọn loại cuộc hẹn' }]}
-          >
-            <Select>
-              <Option value="checkup">Khám sức khỏe</Option>
-              <Option value="medication">Uống thuốc</Option>
-              <Option value="exercise">Tập thể dục</Option>
-              <Option value="social">Hoạt động xã hội</Option>
-              <Option value="emergency">Khẩn cấp</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="elderlyId"
+            name="elderId"
             label="Người cao tuổi"
             rules={[{ required: true, message: 'Vui lòng chọn người cao tuổi' }]}
           >
-            <Select>
-              {mockElderly.map(elderly => (
-                <Option key={elderly.id} value={elderly.id}>
-                  {elderly.fullName} ({elderly.age} tuổi)
+            <Select 
+              placeholder="Chọn người cao tuổi"
+              showSearch
+              filterOption={(input, option) =>
+                (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {elders.map(elder => (
+                <Option key={elder.elderId} value={elder.elderId}>
+                  {elder.fullName} {elder.age ? `(${elder.age} tuổi)` : ''}
                 </Option>
               ))}
             </Select>
           </Form.Item>
 
           <Form.Item
-            name="caregiverId"
-            label="Người chăm sóc"
-            rules={[{ required: true, message: 'Vui lòng chọn người chăm sóc' }]}
+            name="careType"
+            label="Loại cuộc hẹn"
+            rules={[{ required: true, message: 'Vui lòng chọn loại cuộc hẹn' }]}
           >
-            <Select>
-              {mockCaregivers.map(caregiver => (
-                <Option key={caregiver.id} value={caregiver.id}>
-                  {caregiver.name} - {caregiver.specialization.join(', ')}
-                </Option>
-              ))}
+            <Select 
+              placeholder="Chọn loại cuộc hẹn"
+              onChange={(value) => {
+                handleCareTypeChange(value);
+                setCareType(value);
+              }}
+            >
+              <Option value="Doctor">Bác sĩ khám</Option>
+              <Option value="Nurse">Điều dưỡng chăm sóc</Option>
             </Select>
           </Form.Item>
 
+          {(careType === 'Doctor' || form.getFieldValue('careType') === 'Doctor') && (
+            <Form.Item
+              name="doctorId"
+              label="Bác sĩ"
+              rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
+            >
+              <Select 
+                placeholder="Chọn bác sĩ"
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {doctors.map(doctor => (
+                  <Option key={doctor.userId} value={doctor.userId}>
+                    BS. {doctor.fullName}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          {(careType === 'Nurse' || form.getFieldValue('careType') === 'Nurse') && (
+            <Form.Item
+              name="nurseId"
+              label="Điều dưỡng/Nhân viên"
+              rules={[{ required: true, message: 'Vui lòng chọn điều dưỡng/nhân viên' }]}
+            >
+              <Select 
+                placeholder="Chọn điều dưỡng/nhân viên"
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {staffNurses.map(staff => (
+                  <Option key={staff.userId} value={staff.userId}>
+                    {staff.role === 'Nurse' ? 'ĐD. ' : 'NV. '}{staff.fullName}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
           <Form.Item
-            name="description"
-            label="Mô tả"
+            name="visitDate"
+            label="Ngày giờ hẹn"
+            rules={[{ required: true, message: 'Vui lòng chọn ngày giờ hẹn' }]}
           >
-            <Input.TextArea rows={3} />
+            <DatePicker 
+              showTime 
+              format="DD/MM/YYYY HH:mm"
+              style={{ width: '100%' }}
+              placeholder="Chọn ngày giờ hẹn"
+            />
           </Form.Item>
 
           <Form.Item
-            name="location"
-            label="Địa điểm"
+            name="status"
+            label="Trạng thái"
           >
-            <Input />
+            <Select>
+              <Option value="Scheduled">Đã lên lịch</Option>
+              <Option value="Completed">Hoàn thành</Option>
+              <Option value="Cancelled">Đã hủy</Option>
+            </Select>
           </Form.Item>
 
           <Form.Item
             name="notes"
             label="Ghi chú"
           >
-            <Input.TextArea rows={2} />
+            <Input.TextArea rows={3} placeholder="Nhập ghi chú về cuộc hẹn" />
           </Form.Item>
         </Form>
       </Modal>

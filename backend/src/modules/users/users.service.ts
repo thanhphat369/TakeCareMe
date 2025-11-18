@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from '../../entities/user.entity';
+import { User, UserRole } from '../../entities/user.entity';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +17,23 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.userRepository.find();
+  }
+
+  async findByRole(role: string): Promise<User[]> {
+    return this.userRepository.find({
+      where: { role: role as any },
+      select: ['userId', 'fullName', 'email', 'role', 'avatar', 'phone', 'status'],
+    });
+  }
+
+  async findDoctorsAndStaff(): Promise<User[]> {
+    return this.userRepository.find({
+      where: [
+        { role: UserRole.DOCTOR },
+        { role: UserRole.STAFF },
+      ],
+      select: ['userId', 'fullName', 'email', 'role', 'avatar', 'phone', 'status'],
+    });
   }
 
   async findOne(id: string | number): Promise<User> {

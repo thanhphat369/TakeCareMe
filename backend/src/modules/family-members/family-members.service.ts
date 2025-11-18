@@ -119,6 +119,12 @@ async findByElder(elderId: number) {
     ])
     .getMany();
 }
+async findPrimaryByElder(elderId: number) {
+  return await this.familyElderRepo.findOne({
+    where: { elderId, isPrimary: true },
+    relations: ['family'], // lấy thông tin user (họ tên, email, phone,...)
+  });
+}
 
   /** Xoá người thân */
   async remove(familyId: number, elderId: number): Promise<void> {

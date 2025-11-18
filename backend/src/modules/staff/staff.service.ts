@@ -8,6 +8,48 @@ import { UpdateStaffDto } from './dto/update-staff.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
 import * as bcrypt from 'bcrypt';
 
+/**
+ * Extract relative path from avatar URL
+ * Converts full URLs like "http://localhost:3000/uploads/avatars/file.jpg" 
+ * to relative paths like "/uploads/avatars/file.jpg"
+ * @param avatar - Avatar URL or path
+ * @returns Relative path or null
+ */
+function extractAvatarPath(avatar: string | null | undefined): string | null {
+  if (!avatar || typeof avatar !== 'string') {
+    return null;
+  }
+  
+  const trimmed = avatar.trim();
+  if (trimmed === '') {
+    return null;
+  }
+  
+  // If it's already a relative path, return as is
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  
+  // If it's a full URL, extract the pathname
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      const urlObj = new URL(trimmed);
+      return urlObj.pathname;
+    } catch {
+      // If URL parsing fails, return null to avoid saving invalid data
+      console.warn('Invalid avatar URL format:', trimmed);
+      return null;
+    }
+  }
+  
+  // If it doesn't start with /, assume it's a relative path and add /
+  if (!trimmed.startsWith('/')) {
+    return '/' + trimmed;
+  }
+  
+  return trimmed;
+}
+
 @Injectable()
 export class StaffService {
   constructor(
@@ -49,10 +91,13 @@ export class StaffService {
       role: createStaffDto.role,
       passwordHash: hashedPassword,
       status: UserStatus.ACTIVE,
+      notes: 'Tài khoản tạo tự động cho Staff',
     });
-
     const savedUser = await this.userRepository.save(user);
 
+    // Extract relative path from avatar URL if it's a full URL
+    const avatarPath = extractAvatarPath(createStaffDto.avatar);
+    
     // Tạo Staff profile
     const staff = this.staffRepository.create({
       userId: savedUser.userId,
@@ -65,6 +110,7 @@ export class StaffService {
       shift: createStaffDto.shift,
       status: createStaffDto.status || StaffStatus.ACTIVE,
       notes: createStaffDto.notes,
+      avatar: avatarPath,
     });
 
     const savedStaff = await this.staffRepository.save(staff);
@@ -158,6 +204,12 @@ export class StaffService {
     if (updateStaffDto.shift !== undefined) staff.shift = updateStaffDto.shift;
     if (updateStaffDto.status !== undefined) staff.status = updateStaffDto.status;
     if (updateStaffDto.notes !== undefined) staff.notes = updateStaffDto.notes;
+    
+    // Xử lý avatar đặc biệt - extract relative path if it's a full URL
+    if (updateStaffDto.hasOwnProperty('avatar')) {
+      const avatarPath = extractAvatarPath(updateStaffDto.avatar);
+      staff.avatar = avatarPath;
+    }
 
     await this.staffRepository.save(staff);
 

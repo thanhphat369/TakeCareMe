@@ -1,10 +1,4 @@
-import { 
-  Entity, 
-  Column, 
-  PrimaryGeneratedColumn, 
-  ManyToOne, 
-  JoinColumn 
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, UpdateDateColumn } from 'typeorm';
 import { Elder } from './elder.entity';
 
 @Entity('MobilityProfiles')
@@ -28,6 +22,6 @@ export class MobilityProfile {
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   notes: string;
 
-  @Column({ name: 'last_update', type: 'datetime', default: () => 'GETDATE()' })
+  @UpdateDateColumn({ name: 'last_update', type: 'datetime', default: () => 'GETDATE()' })
   lastUpdate: Date;
 }

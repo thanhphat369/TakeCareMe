@@ -11,7 +11,14 @@ import {
   ParseIntPipe,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
@@ -121,5 +128,51 @@ export class StaffController {
     @Body('isOnLeave') isOnLeave: boolean,
   ) {
     return this.staffService.setOnLeave(id, isOnLeave);
+  }
+
+  /**
+   * Upload avatar cho staff
+   * POST /api/staff/upload-avatar
+   */
+  @Post('upload-avatar')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadPath = join(process.cwd(), 'uploads', 'avatars');
+          if (!existsSync(uploadPath)) {
+            mkdirSync(uploadPath, { recursive: true });
+          }
+          cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          cb(null, `staff-${uniqueSuffix}${ext}`);
+        },
+      }),
+      limits: {
+        fileSize: 2 * 1024 * 1024, // 2MB
+      },
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return cb(new BadRequestException('Chỉ chấp nhận file hình ảnh (JPG, PNG, GIF)'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadAvatar(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Không có file được upload');
+    }
+    const fileUrl = `/uploads/avatars/${file.filename}`;
+    return {
+      url: fileUrl,
+      filename: file.filename,
+      originalname: file.originalname,
+      size: file.size,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './modules/auth/auth.module';
@@ -16,13 +16,21 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ProfilesModule } from './modules/profiles/profiles.module';
 import { MedicalHistoryModule } from './modules/medical-history/medical-history.module';
 import { FamilyMembersModule  } from './modules/family-members/family-members.module';
+import { HealthProfilesModule } from './modules/health-profiles/health-profiles.module';
+import { KpiModule } from './modules/kpi/kpi.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { CareModule } from './modules/care/care.module';
+import { LabResultsModule } from './modules/lab-results/lab-results.module';
+import { RehabilitationRecordsModule } from './modules/rehabilitation-records/rehabilitation-records.module';
+
 @Module({
   imports: [
-    ConfigModule.forRoot({
+    ConfigModule.forRoot({   
       isGlobal: true,
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
+      
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         type: 'mssql',
@@ -32,12 +40,13 @@ import { FamilyMembersModule  } from './modules/family-members/family-members.mo
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Set false cho production, dùng migrations
+        synchronize: false,
         options: {
-          encrypt: configService.get('DB_ENCRYPT') === 'true',
-          trustServerCertificate: configService.get('DB_TRUST_CERT') === 'true',
+          encrypt: false,
+          trustServerCertificate: true,
         },
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: true,
+        logger: 'advanced-console',
       }),
       inject: [ConfigService],
     }),
@@ -56,7 +65,14 @@ import { FamilyMembersModule  } from './modules/family-members/family-members.mo
     ProfilesModule,
     MedicalHistoryModule,
     FamilyMembersModule,
-    
+    HealthProfilesModule,
+    KpiModule,
+    NotificationsModule,
+    CareModule,
+    LabResultsModule,
+    RehabilitationRecordsModule,
   ],
+  controllers: [],
+  providers: [],
 })
 export class AppModule {}

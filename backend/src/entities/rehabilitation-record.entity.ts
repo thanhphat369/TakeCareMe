@@ -20,7 +20,7 @@ export class RehabilitationRecord {
   elder: Elder;
 
   @Column({ name: 'start_date', type: 'datetime', nullable: true })
-  startDate: Date;
+  startDate: string;
 
   @Column({ type: 'nvarchar', length: 50, nullable: true })
   status: string;

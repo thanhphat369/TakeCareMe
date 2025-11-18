@@ -34,9 +34,9 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
     try {
       setDeletingId(id);
       await onDelete(id);
-      message.success('XÛa ngu?i th‚n th‡nh cÙng');
+      message.success('X√≥a ngu·ªùi th√¢n th√†nh c√¥ng');
     } catch (error: any) {
-      message.error(error.message || 'XÛa th?t b?i');
+      message.error(error.message || 'X√≥a th√°t b·∫°i');
     } finally {
       setDeletingId(null);
     }
@@ -47,23 +47,23 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
   };
 
   const getStatusText = (status: string) => {
-    return status === 'Active' ? 'Ho?t d?ng' : 'KhÙng ho?t d?ng';
+    return status === 'Active' ? 'Ho·∫°t d·ªông' : 'Kh√¥ng ho·∫°t ƒë·ªông';
   };
 
   const getRelationshipColor = (relationship: string) => {
     const colors: { [key: string]: string } = {
       'Con trai': 'blue',
-      'Con g·i': 'pink',
-      'Con d‚u': 'purple',
-      'Con r?': 'cyan',
-      'Ch·u trai': 'orange',
-      'Ch·u g·i': 'magenta',
-      'Anh/Ch?': 'green',
-      'Em trai/Em g·i': 'lime',
-      'Ch·u n?i': 'gold',
-      'Ch·u ngo?i': 'volcano',
-      'Ngu?i gi·m h?': 'red',
-      'Kh·c': 'default',
+      'Con g√°i': 'pink',
+      'Con d√¢u': 'purple',
+      'Con r·ªÉ': 'cyan',
+      'Ch√°u trai': 'orange',
+      'Ch√°u g√°i': 'magenta',
+      'Anh/Ch·ªã': 'green',
+      'Em trai/Em g√°i': 'lime',
+      'Ch√°u n·ªôi': 'gold',
+      'Ch√°u ngo·ªçi': 'volcano',
+      'Ngu·ªùi gi√°m h·ªô': 'red',
+      'Kh√°c': 'default',
     };
     return colors[relationship] || 'default';
   };
@@ -78,7 +78,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="T?ng s? ngu?i th‚n"
+              title="T·ªïng s·ªë ngu·ªùi th√¢n"
               value={familyMembers.length}
               prefix={<UserOutlined />}
             />
@@ -87,7 +87,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="–ang ho?t d?ng"
+              title="ƒêang ho·∫°t d·ªông"
               value={activeMembers.length}
               prefix={<UserOutlined />}
               valueStyle={{ color: '#3f8600' }}
@@ -97,7 +97,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
         <Col span={8}>
           <Card size="small">
             <Statistic
-              title="Ngu?i liÍn h? chÌnh"
+              title="Ngu·ªùi li√™n h·ªá ch√≠nh"
               value={primaryMember ? 1 : 0}
               prefix={<CrownOutlined />}
               valueStyle={{ color: '#cf1322' }}
@@ -114,7 +114,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
           onClick={onAdd}
           className="mb-4"
         >
-          ThÍm ngu?i th‚n
+          Th√™m ngu·ªùi th√¢n
         </Button>
       </div>
 
@@ -122,10 +122,10 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
       {familyMembers.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Chua cÛ ngu?i th‚n n‡o"
+          description="Chua c√≥ ngu·ªùi th√¢n n√†o"
         >
           <Button type="primary" icon={<PlusOutlined />} onClick={onAdd}>
-            ThÍm ngu?i th‚n d?u tiÍn
+            Th√™m ngu·ªùi th√¢n ƒë·∫ßu ti√™n
           </Button>
         </Empty>
       ) : (
@@ -145,16 +145,16 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                     icon={<EditOutlined />}
                     onClick={() => onEdit(member)}
                   >
-                    Ch?nh s?a
+                    Ch·ªânh s·ª≠a
                   </Button>,
                   <Popconfirm
                     key="delete"
-                    title="X·c nh?n xÛa"
-                    description="B?n cÛ ch?c ch?n mu?n xÛa ngu?i th‚n n‡y?"
+                    title="X√°c nh·∫≠n x√≥a"
+                    description="B·∫°nn c√≥ ch·∫Øc ch·∫Øn mu·ªën x√≥a ngu·ªùi th√¢n n√†y?"
                     icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
                     onConfirm={() => handleDelete(String(member.familyId))}
-                    okText="XÛa"
-                    cancelText="H?y"
+                    okText="X√≥a"
+                    cancelText="H·ªßy"
                     okButtonProps={{ danger: true }}
                   >
                     <Button
@@ -163,7 +163,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                       icon={<DeleteOutlined />}
                       loading={deletingId === String(member.familyId)}
                     >
-                      XÛa
+                      X√≥a
                     </Button>
                   </Popconfirm>,
                 ]}
@@ -182,7 +182,7 @@ const FamilyMemberList: React.FC<FamilyMemberListProps> = ({
                     </Tag>
                     {member.isPrimary && (
                       <Tag color="red" icon={<CrownOutlined />}>
-                        LiÍn h? chÌnh
+                        Li√™n h·ªá ch√≠nh
                       </Tag>
                     )}
                   </div>

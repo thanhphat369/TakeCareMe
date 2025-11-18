@@ -40,13 +40,6 @@ export const API_ENDPOINTS = {
     DELETE: (id: string) => `/api/medications/${id}`,
     BY_ELDER: (elderId: number) => `/api/medications/elder/${elderId}`,
   },
-  PRESCRIPTIONS: {
-    LIST: '/api/prescriptions',
-    CREATE: '/api/prescriptions',
-    UPDATE: (id: string) => `/api/prescriptions/${id}`,
-    DELETE: (id: string) => `/api/prescriptions/${id}`,
-    BY_ELDER: (elderId: number) => `/api/prescriptions/elder/${elderId}`,
-  },
   USERS: {
     LIST: '/users',
     STAFF: '/users?role=staff',

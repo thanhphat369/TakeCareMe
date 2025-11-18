@@ -27,11 +27,21 @@ export class Appointment {
   @JoinColumn({ name: 'doctor_id' })
   doctor: User;
 
+  @Column({ name: 'nurse_id', nullable: true })
+  nurseId: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'nurse_id' })
+  nurse: User;
+
+  @Column({ name: 'care_type', type: 'nvarchar', length: 20, nullable: true })
+  careType: string;
+
   @Column({ name: 'visit_date', type: 'datetime', nullable: true })
-  visitDate: Date;
+  visitDate: string;
 
   @Column({ name: 'next_visit_date', type: 'datetime', nullable: true })
-  nextVisitDate: Date;
+  nextVisitDate: string;
 
   @Column({ type: 'nvarchar', length: 255, nullable: true })
   notes: string;

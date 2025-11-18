@@ -24,10 +24,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Tài khoản không hợp lệ');
     }
 
+    // Lấy role từ database user thay vì payload để đảm bảo luôn đúng
     return { 
-      userId: payload.sub, 
-      email: payload.email, 
-      role: payload.role,
+      userId: user.userId || payload.sub, 
+      email: user.email || payload.email, 
+      role: user.role, // Lấy role từ database để đảm bảo đúng
       fullName: user.fullName,
     };
   }

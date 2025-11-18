@@ -289,6 +289,29 @@ export async function resolveAlert(id: string, accessToken?: string) {
   return res.json();
 }
 
+export async function createAlert(alertData: {
+  elderId?: number | string;
+  type: string;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  title: string;
+  notes?: string;
+}, accessToken?: string) {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/alerts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken || localStorage.getItem('accessToken') || ''}`,
+    },
+    body: JSON.stringify(alertData),
+  });
+  if (!res.ok) {
+    const msg = await res.text().catch(() => '');
+    throw new Error(`Create alert failed: HTTP ${res.status} ${msg}`);
+  }
+  return res.json();
+}
+
 // Medications API
 export async function getMedications(accessToken?: string) {
   const base = getApiBaseUrl();

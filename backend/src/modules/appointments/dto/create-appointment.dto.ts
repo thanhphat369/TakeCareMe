@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsDateString, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsDateString, IsNumber, IsString, IsIn } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsNumber()
@@ -9,13 +9,22 @@ export class CreateAppointmentDto {
   @IsOptional()
   doctorId?: number;
 
+  @IsNumber()
+  @IsOptional()
+  nurseId?: number;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['Doctor', 'Nurse'])
+  careType?: string;
+
   @IsDateString()
   @IsNotEmpty()
-  visitDate: Date;
+  visitDate: string;
 
   @IsDateString()
   @IsOptional()
-  nextVisitDate?: Date;
+  nextVisitDate?: string;
 
   @IsOptional()
   notes?: string;

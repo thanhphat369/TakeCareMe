@@ -20,7 +20,7 @@ export class LabResult {
   elder: Elder;
 
   @Column({ name: 'test_date', type: 'datetime', nullable: true })
-  testDate: Date;
+  testDate: string;
 
   @Column({ name: 'test_type', type: 'nvarchar', length: 100, nullable: true })
   testType: string;

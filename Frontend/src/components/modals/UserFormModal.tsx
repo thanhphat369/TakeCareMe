@@ -95,7 +95,14 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
       };
 
       if (isEdit) {
-        await updateUser(user!.id, submitData as UpdateUserRequest);
+        // Use userId if available, otherwise fallback to id
+        const userId = user!.userId !== undefined && user!.userId !== null 
+          ? String(user!.userId) 
+          : user!.id;
+        if (!userId) {
+          throw new Error('Không tìm thấy ID người dùng');
+        }
+        await updateUser(userId, submitData as UpdateUserRequest);
         message.success('Cập nhật người dùng thành công');
       } else {
         await createUser(submitData as CreateUserRequest);

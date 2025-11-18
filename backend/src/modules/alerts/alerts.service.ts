@@ -3,12 +3,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alert } from '../../entities/alert.entity';
 import { CreateAlertDto } from './dto/create-alert.dto';
+import { FamilyElder } from '../../entities/family-elder.entity';
+import { User, UserRole } from '../../entities/user.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AlertsService {
   constructor(
     @InjectRepository(Alert)
     private alertRepository: Repository<Alert>,
+    @InjectRepository(FamilyElder)
+    private familyElderRepository: Repository<FamilyElder>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private notificationsService: NotificationsService,
   ) {}
 
   async create(createAlertDto: CreateAlertDto): Promise<Alert> {
@@ -20,10 +28,47 @@ export class AlertsService {
 
     const saved = await this.alertRepository.save(alert);
 
-    // TODO: Gửi push notification tới Staff & Family
-    // this.notificationService.sendAlert(saved);
+    // Notify Staff (nurses/doctors) and Family of the elder
+    await this.dispatchNotifications(saved);
 
     return saved;
+  }
+
+  private async dispatchNotifications(alert: Alert): Promise<void> {
+    // Staff targets
+    const staff = await this.userRepository.find({
+      where: [{ role: UserRole.STAFF }, { role: UserRole.DOCTOR }],
+      select: ['userId', 'fullName', 'phone', 'email'],
+    });
+
+    // Family targets of the elder
+    const familyLinks = await this.familyElderRepository.find({
+      where: { elderId: alert.elderId },
+      relations: ['family'],
+    });
+    const familyUsers = familyLinks.map(l => l.family).filter(Boolean) as User[];
+
+    const recipients = [...staff, ...familyUsers].map(u => ({
+      phone: u.phone || undefined,
+      pushToken: undefined, // Integrate if available in Users table
+      zaloId: undefined,    // Integrate if available in Users table
+      email: u.email || undefined,
+    }));
+
+    const payload = {
+      title: `Cảnh báo ${alert.type}`,
+      message: alert.notes || 'Hệ thống phát hiện chỉ số bất thường. Vui lòng kiểm tra ngay.',
+      severity: (alert.severity as any) || 'Low',
+      elderId: alert.elderId,
+      timestamp: alert.triggeredAt,
+      metadata: {
+        alertId: alert.alertId,
+        assignedTo: alert.assignedTo,
+        status: alert.status,
+      },
+    };
+
+    await this.notificationsService.sendAllChannels(recipients, payload);
   }
 
   async findAll(filters?: {

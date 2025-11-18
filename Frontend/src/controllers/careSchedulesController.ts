@@ -16,11 +16,13 @@ export async function fetchCareSchedules() {
   return raw.map((r: any) => ({
     id: String(r.scheduleId ?? r.id),
     elderId: r.elderId,
+    elderName: r.elder?.fullName ?? r.elder?.user?.fullName ?? undefined,
     type: r.type,
     recurrence: r.recurrence,
     startTime: r.startTime,
     endTime: r.endTime,
     assignedTo: r.assignedTo ?? null,
+    assigneeName: r.assignee?.fullName ?? undefined,
     status: r.status || 'Active',
   }));
 }

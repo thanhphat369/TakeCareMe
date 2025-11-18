@@ -36,7 +36,7 @@ export const createFamilyMember = async (
     return response.data;
   } catch (error: any) {
     console.error('Error creating family member:', error);
-    throw new Error(error.response?.data?.message || 'Không th? t?o ngu?i thân m?i');
+    throw new Error(error.response?.data?.message || 'Khï¿½ng th? t?o ngu?i thï¿½n m?i');
   }
 };
 
@@ -49,7 +49,7 @@ export const updateFamilyMember = async (
     return response.data;
   } catch (error: any) {
     console.error('Error updating family member:', error);
-    throw new Error(error.response?.data?.message || 'Không th? c?p nh?t thông tin ngu?i thân');
+    throw new Error(error.response?.data?.message || 'Khï¿½ng th? c?p nh?t thï¿½ng tin ngu?i thï¿½n');
   }
 };
 
@@ -61,6 +61,11 @@ export const deleteFamilyMember = async (
     await apiClient.delete(`/api/family-members/${familyId}/${elderId}`);
   } catch (error: any) {
     console.error('Error deleting family member:', error);
-    throw new Error(error.response?.data?.message || 'Không th? xóa ngu?i thân');
+    throw new Error(error.response?.data?.message || 'KhÃ´ng thá»ƒ xÃ³a ngÆ°á»i thÃ¢n');
   }
+};
+
+export const getPrimaryFamilyMember = async (elderId: number): Promise<FamilyMember | null> => {
+  const res = await apiClient.get(`/api/family-members/elder/${elderId}/primary`);
+  return res.data;
 };

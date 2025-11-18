@@ -37,6 +37,9 @@ export class Staff {
   @Column({ name: 'role_title', type: 'nvarchar', length: 50 })
   roleTitle: string;
 
+  @Column({ type: 'nvarchar', length: 255, nullable: true })
+  avatar: string;
+
   @Column({ name: 'license_no', type: 'nvarchar', length: 50, nullable: true })
   licenseNo: string;
 

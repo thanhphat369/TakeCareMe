@@ -18,7 +18,15 @@ export const getUsers = async (filters?: {
     if (filters?.dateTo) params.append('dateTo', filters.dateTo);
 
     const response = await apiClient.get(`/api/users?${params.toString()}`);
-    return response.data;
+    // Map userId to id if id is missing
+    const users: User[] = Array.isArray(response.data) 
+      ? response.data.map((user: any) => ({
+          ...user,
+          id: user.id || String(user.userId || ''),
+          userId: user.userId || Number(user.id) || undefined,
+        }))
+      : [];
+    return users;
   } catch (error: any) {
     console.error('Error fetching users:', error);
     throw new Error(error.response?.data?.message || 'Không thể tải danh sách người dùng');
@@ -40,7 +48,13 @@ export const getUserStats = async (): Promise<UserStats> => {
 export const getUser = async (userId: string): Promise<User> => {
   try {
     const response = await apiClient.get(`/api/users/${userId}`);
-    return response.data;
+    const user = response.data;
+    // Map userId to id if id is missing
+    return {
+      ...user,
+      id: user.id || String(user.userId || ''),
+      userId: user.userId || Number(user.id) || undefined,
+    };
   } catch (error: any) {
     console.error('Error fetching user:', error);
     throw new Error(error.response?.data?.message || 'Không thể tải thông tin người dùng');
@@ -61,8 +75,15 @@ export const createUser = async (data: CreateUserRequest): Promise<User> => {
 // Update a user
 export const updateUser = async (userId: string, data: UpdateUserRequest): Promise<User> => {
   try {
-    const response = await apiClient.put(`/api/users/${userId}`, data);
-    return response.data;
+    // Backend uses PATCH, not PUT
+    const response = await apiClient.patch(`/api/users/${userId}`, data);
+    const user = response.data;
+    // Map userId to id if id is missing
+    return {
+      ...user,
+      id: user.id || String(user.userId || ''),
+      userId: user.userId || Number(user.id) || undefined,
+    };
   } catch (error: any) {
     console.error('Error updating user:', error);
     throw new Error(error.response?.data?.message || 'Không thể cập nhật thông tin người dùng');
@@ -82,8 +103,15 @@ export const deleteUser = async (userId: string): Promise<void> => {
 // Ban a user
 export const banUser = async (userId: string): Promise<User> => {
   try {
-    const response = await apiClient.patch(`/api/users/${userId}/ban`);
-    return response.data;
+    // Use PATCH to update status to Banned
+    const response = await apiClient.patch(`/api/users/${userId}`, { status: 'Banned' });
+    const user = response.data;
+    // Map userId to id if id is missing
+    return {
+      ...user,
+      id: user.id || String(user.userId || ''),
+      userId: user.userId || Number(user.id) || undefined,
+    };
   } catch (error: any) {
     console.error('Error banning user:', error);
     throw new Error(error.response?.data?.message || 'Không thể khóa tài khoản');
@@ -93,8 +121,15 @@ export const banUser = async (userId: string): Promise<User> => {
 // Unban a user
 export const unbanUser = async (userId: string): Promise<User> => {
   try {
-    const response = await apiClient.patch(`/api/users/${userId}/unban`);
-    return response.data;
+    // Use PATCH to update status to Active
+    const response = await apiClient.patch(`/api/users/${userId}`, { status: 'Active' });
+    const user = response.data;
+    // Map userId to id if id is missing
+    return {
+      ...user,
+      id: user.id || String(user.userId || ''),
+      userId: user.userId || Number(user.id) || undefined,
+    };
   } catch (error: any) {
     console.error('Error unbanning user:', error);
     throw new Error(error.response?.data?.message || 'Không thể mở khóa tài khoản');
@@ -130,6 +165,25 @@ export const getUsersByRole = async (role: string): Promise<User[]> => {
   } catch (error: any) {
     console.error('Error fetching users by role:', error);
     throw new Error(error.response?.data?.message || 'Không thể tải người dùng theo vai trò');
+  }
+};
+
+// Get doctors and staff (accessible by Doctor and Staff roles)
+export const getDoctorsAndStaff = async (): Promise<User[]> => {
+  try {
+    const response = await apiClient.get('/api/users/doctors-and-staff');
+    // Map userId to id if id is missing
+    const users: User[] = Array.isArray(response.data) 
+      ? response.data.map((user: any) => ({
+          ...user,
+          id: user.id || String(user.userId || ''),
+          userId: user.userId || Number(user.id) || undefined,
+        }))
+      : [];
+    return users;
+  } catch (error: any) {
+    console.error('Error fetching doctors and staff:', error);
+    throw new Error(error.response?.data?.message || 'Không thể tải danh sách bác sĩ và điều dưỡng');
   }
 };
 

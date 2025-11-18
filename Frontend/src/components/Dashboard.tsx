@@ -109,13 +109,6 @@ const Dashboard: React.FC = () => {
         </Space>
       </div>
 
-      {loading && (
-        <div className="text-gray-500">Đang tải dữ liệu từ máy chủ...</div>
-      )}
-      {error && (
-        <div className="text-red-600">Lỗi: {error}</div>
-      )}
-
       {/* Statistics Cards */}
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={6}>
@@ -128,7 +121,7 @@ const Dashboard: React.FC = () => {
             />
             <div className="mt-2">
               <Progress 
-                percent={(stats.activeElderly / stats.totalElderly) * 100} 
+                percent={stats.totalElderly > 0 ? (stats.activeElderly / stats.totalElderly) * 100 : 0} 
                 size="small" 
                 status="active"
               />

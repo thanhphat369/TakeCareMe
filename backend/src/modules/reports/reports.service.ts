@@ -45,14 +45,46 @@ export class ReportsService {
       order: { timestamp: 'ASC' },
     });
 
-    // Group vitals by type
+    // Convert vital readings to type/value/unit format and group by type
     const vitalsByType = vitals.reduce((acc, vital) => {
-      if (!acc[vital.type]) acc[vital.type] = [];
-      acc[vital.type].push({
-        value: vital.value,
-        unit: vital.unit,
-        timestamp: vital.timestamp,
+      // Extract all vital signs from the record
+      const vitalEntries: Array<{ type: string; value: number; unit: string; timestamp: Date }> = [];
+
+      if (vital.systolic !== null && vital.systolic !== undefined) {
+        vitalEntries.push({ type: 'Systolic', value: vital.systolic, unit: 'mmHg', timestamp: vital.timestamp });
+      }
+      if (vital.diastolic !== null && vital.diastolic !== undefined) {
+        vitalEntries.push({ type: 'Diastolic', value: vital.diastolic, unit: 'mmHg', timestamp: vital.timestamp });
+      }
+      if (vital.heartRate !== null && vital.heartRate !== undefined) {
+        vitalEntries.push({ type: 'Heart Rate', value: vital.heartRate, unit: 'bpm', timestamp: vital.timestamp });
+      }
+      if (vital.temperature !== null && vital.temperature !== undefined) {
+        vitalEntries.push({ type: 'Temperature', value: vital.temperature, unit: '°C', timestamp: vital.timestamp });
+      }
+      if (vital.spo2 !== null && vital.spo2 !== undefined) {
+        vitalEntries.push({ type: 'SpO2', value: vital.spo2, unit: '%', timestamp: vital.timestamp });
+      }
+      if (vital.bloodGlucose !== null && vital.bloodGlucose !== undefined) {
+        vitalEntries.push({ type: 'Blood Glucose', value: vital.bloodGlucose, unit: 'mg/dL', timestamp: vital.timestamp });
+      }
+      if (vital.weight !== null && vital.weight !== undefined) {
+        vitalEntries.push({ type: 'Weight', value: vital.weight, unit: 'kg', timestamp: vital.timestamp });
+      }
+      if (vital.height !== null && vital.height !== undefined) {
+        vitalEntries.push({ type: 'Height', value: vital.height, unit: 'cm', timestamp: vital.timestamp });
+      }
+
+      // Group by type
+      vitalEntries.forEach(entry => {
+        if (!acc[entry.type]) acc[entry.type] = [];
+        acc[entry.type].push({
+          value: entry.value,
+          unit: entry.unit,
+          timestamp: entry.timestamp,
+        });
       });
+
       return acc;
     }, {});
 
@@ -89,11 +121,6 @@ export class ReportsService {
         gender: elder.gender,
         address: elder.address,
       },
-      contactPerson: elder.contactPerson ? {
-        fullName: elder.contactPerson.fullName,
-        phone: elder.contactPerson.phone,
-        email: elder.contactPerson.email,
-      } : null,
       medicalHistory: elder.medicalHistory,
       period: { from, to },
       vitals: {
@@ -135,8 +162,33 @@ export class ReportsService {
     });
 
     let csv = 'Timestamp,Type,Value,Unit,Source\n';
+    
     vitals.forEach(vital => {
-      csv += `${vital.timestamp},${vital.type},${vital.value},${vital.unit},${vital.source}\n`;
+      // Convert each vital reading to multiple CSV rows (one per vital sign)
+      if (vital.systolic !== null && vital.systolic !== undefined) {
+        csv += `${vital.timestamp},Systolic,${vital.systolic},mmHg,${vital.source}\n`;
+      }
+      if (vital.diastolic !== null && vital.diastolic !== undefined) {
+        csv += `${vital.timestamp},Diastolic,${vital.diastolic},mmHg,${vital.source}\n`;
+      }
+      if (vital.heartRate !== null && vital.heartRate !== undefined) {
+        csv += `${vital.timestamp},Heart Rate,${vital.heartRate},bpm,${vital.source}\n`;
+      }
+      if (vital.temperature !== null && vital.temperature !== undefined) {
+        csv += `${vital.timestamp},Temperature,${vital.temperature},°C,${vital.source}\n`;
+      }
+      if (vital.spo2 !== null && vital.spo2 !== undefined) {
+        csv += `${vital.timestamp},SpO2,${vital.spo2},%,${vital.source}\n`;
+      }
+      if (vital.bloodGlucose !== null && vital.bloodGlucose !== undefined) {
+        csv += `${vital.timestamp},Blood Glucose,${vital.bloodGlucose},mg/dL,${vital.source}\n`;
+      }
+      if (vital.weight !== null && vital.weight !== undefined) {
+        csv += `${vital.timestamp},Weight,${vital.weight},kg,${vital.source}\n`;
+      }
+      if (vital.height !== null && vital.height !== undefined) {
+        csv += `${vital.timestamp},Height,${vital.height},cm,${vital.source}\n`;
+      }
     });
 
     return csv;

@@ -11,6 +11,7 @@ export interface Staff {
   department?: string;
   status?: string;
   user?: {
+    userId?: number;
     fullName: string;
     email: string;
     phone?: string;
@@ -20,14 +21,15 @@ export interface Staff {
 
 // ===== API Methods =====
 
-// 🔹 (Alias) Giữ tương thích cho PrescriptionManagement
+// 🔹 Alias để lấy danh sách nhân viên
 export async function getStaffs(): Promise<Staff[]> {
   return getAllStaff();
 }
 //  Lấy danh sách nhân viên
 export async function getAllStaff(): Promise<Staff[]> {
   const res = await api.get('/api/staff');
-  return res.data;
+  // Backend returns { data: Staff[], total: number, ... } or Staff[] directly
+  return Array.isArray(res.data) ? res.data : (res.data?.data || []);
 }
 
 // Thêm nhân viên mới

@@ -19,6 +19,7 @@ export async function fetchStaffController() {
     education: item.education || '',
     skills: item.skills || '',
     notes: item.notes || '',
+    avatar: item.avatar || null,
     hireDate: item.createdAt ? new Date(item.createdAt) : undefined,
     createdAt: item.createdAt ? new Date(item.createdAt) : undefined,
     updatedAt: item.updatedAt ? new Date(item.updatedAt) : undefined,
@@ -47,6 +48,7 @@ export async function createStaffController(values: any) {
     notes: values.notes || null,
     status: values.status || 'Active',
     password: values.password || 'staff123',
+    avatar: values.avatar || null,
   };
   const res = await apiClient.post('/api/staff', payload);
   return res.data;
@@ -67,6 +69,7 @@ export async function updateStaffController(id: string, values: any) {
     skills: values.skills || null,
     notes: values.notes || null,
     status: values.status || 'Active',
+    avatar: values.avatar || null,
   };
   const res = await apiClient.patch(`/api/staff/${id}`, payload);
   return res.data;

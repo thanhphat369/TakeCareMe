@@ -15,24 +15,25 @@ import {
   MobileOutlined,
   SafetyCertificateOutlined,
   ReloadOutlined,
+  ScheduleOutlined,
 } from '@ant-design/icons';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Register from './components/Register';
 import ElderlyManagement from './components/ElderlyManagement';
 import Calendar from './components/Calendar';
-import CareSchedules from './components/CareSchedules';
-import CareEvents from './components/CareEvents';
 import HealthRecords from './components/HealthRecords';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import MedicationManagement from './components/MedicationManagement';
-import PrescriptionManagement from './components/PrescriptionManagement';
 import AlertsManagement from './components/AlertsManagement';
 import StaffManagement from './components/StaffManagement';
 import PaymentManagement from './components/PaymentManagement';
 import VitalSignsMonitor from './components/VitalSignsMonitor';
 import UserManagementSystem from './components/UserManagementSystem';
+import ShiftManagement from './components/ShiftManagement';
+import StaffKPIComponent from './components/StaffKPI';
+import MyShiftSchedule from './components/MyShiftSchedule';
 
 
 const { Header, Sider, Content } = Layout;
@@ -91,6 +92,24 @@ const App: React.FC = () => {
         roles: ['SuperAdmin', 'Admin']
       },
       {
+        key: 'shifts',
+        icon: <CalendarOutlined />,
+        label: 'Quản lý ca trực',
+        roles: ['SuperAdmin', 'Admin']
+      },
+      {
+        key: 'my_shifts',
+        icon: <ScheduleOutlined />,
+        label: 'Lịch trực của tôi',
+        roles: ['Doctor', 'Staff']
+      },
+      {
+        key: 'staff_kpi',
+        icon: <BarChartOutlined />,
+        label: 'KPI nhân viên',
+        roles: ['SuperAdmin', 'Admin', 'Doctor']
+      },
+      {
         key: 'users',
         icon: <SafetyCertificateOutlined />,
         label: 'Quản lý tài khoản',
@@ -100,18 +119,6 @@ const App: React.FC = () => {
         key: 'calendar',
         icon: <CalendarOutlined />,
         label: 'Lịch chăm sóc',
-        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
-      },
-      {
-        key: 'care_schedules',
-        icon: <CalendarOutlined />,
-        label: 'Kế hoạch chăm sóc',
-        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
-      },
-      {
-        key: 'care_events',
-        icon: <CalendarOutlined />,
-        label: 'Nhật ký chăm sóc',
         roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
       },
       {
@@ -130,12 +137,6 @@ const App: React.FC = () => {
         key: 'medications',
         icon: <MedicineBoxOutlined />,
         label: 'Quản lý thuốc',
-        roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
-      },
-      {
-        key: 'prescriptions',
-        icon: <FileTextOutlined />,
-        label: 'Đơn thuốc',
         roles: ['SuperAdmin', 'Admin', 'Doctor', 'Staff']
       },
       {
@@ -177,22 +178,22 @@ const App: React.FC = () => {
         return <ElderlyManagement />;
       case 'staff':
         return <StaffManagement />;
+      case 'shifts':
+        return <ShiftManagement />;
+      case 'my_shifts':
+        return <MyShiftSchedule />;
+      case 'staff_kpi':
+        return <StaffKPIComponent />;
       case 'users':
         return <UserManagementSystem />;
       case 'calendar':
         return <Calendar />;
-      case 'care_schedules':
-        return <CareSchedules />;
-      case 'care_events':
-        return <CareEvents />;
       case 'health':
         return <HealthRecords />;
       case 'vitals':
         return <VitalSignsMonitor />;
       case 'medications':
         return <MedicationManagement />;
-      case 'prescriptions':
-        return <PrescriptionManagement />;
       case 'alerts':
         return <AlertsManagement />;
       case 'payments':

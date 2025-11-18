@@ -24,6 +24,18 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('doctors-and-staff')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  findDoctorsAndStaff() {
+    return this.usersService.findDoctorsAndStaff();
+  }
+
+  @Get('role/:role')
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  findByRole(@Param('role') role: string) {
+    return this.usersService.findByRole(role);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);

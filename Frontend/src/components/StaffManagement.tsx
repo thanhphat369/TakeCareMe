@@ -1,587 +1,14 @@
-// // ========================
-// //   IMPORT CÁC THƯ VIỆN
-// // ========================
-// import React, { useState, useEffect } from "react";
-// // các hàm xử lý API logic tách riêng ở controller
-// import {
-//   fetchStaffController, createStaffController, updateStaffController,
-//   deleteStaffController, fetchStaffStatisticsController
-// } from "../controllers/staffController";
-// import { Staff } from '../types';
-// import StaffDetailModal from "./modals/StaffDetailModal";// modal hiển thị chi tiết nhân viên
-// import {
-//   Card, Table, Button, Modal, Form, Input, Select, Space, Tag,
-//   Row, Col, Statistic, Avatar, Tabs, message,
-// } from "antd";// UI components từ Ant Design
-// import {
-//   EyeOutlined, UserOutlined, PlusOutlined, EditOutlined,
-//   DeleteOutlined, TeamOutlined, SafetyOutlined, HeartOutlined,
-// } from "@ant-design/icons"; // icons đẹp mắt từ Ant Design
-
-// const { Option } = Select;
-// const { TabPane } = Tabs;
-
-// // ========================
-// //  COMPONENT CHÍNH
-// // ========================
-// const StaffManagement: React.FC = () => {
-//   // ========================
-//   //  STATE QUẢN LÝ DỮ LIỆU
-//   // ========================
-//   const [staff, setStaff] = useState<Staff[]>([]);// danh sách nhân viên
-//   const [stats, setStats] = useState({ total: 0, active: 0, doctors: 0, nurses: 0,});// thống kê tổng, bác sĩ, điều dưỡng 
-//   const [loading, setLoading] = useState(false);// trạng thái loading bảng
-//   const [isModalVisible, setIsModalVisible] = useState(false);// modal thêm/sửa nhân viên
-//   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);// nhân viên đang chỉnh sửa
-//   const [isDetailVisible, setIsDetailVisible] = useState(false);// modal xem chi tiết
-//   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);// nhân viên được chọn để xem chi tiết
-//   const [form] = Form.useForm();
-
-//   // ========================
-//   //  HÀM GỌI API - DANH SÁCH
-//   // ========================
-//   const fetchStaff = async () => {
-//     try {
-//       setLoading(true);
-//       const formatted = await fetchStaffController();// gọi controller để lấy danh sách nhân viên
-//       setStaff(formatted);// lưu vào state
-//     } catch (error: any) {
-//       console.error("Lỗi tải danh sách nhân viên:", error);
-//       if (error.response?.status === 401) {
-//         message.error("Phiên đăng nhập hết hạn");
-//         localStorage.removeItem("accessToken");
-//         window.location.href = "/login";
-//       } else {
-//         message.error("Không thể tải danh sách nhân viên");
-//       }
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // ========================
-//   //  HÀM GỌI API - THỐNG KÊ
-//   // ========================
-//   const fetchStatistics = async () => {
-//     try {
-//       const data = await fetchStaffStatisticsController();// controller trả về tổng hợp dữ liệu
-//       setStats({
-//         total: data.total,
-//         active: data.active,
-//         doctors: data.byRole?.doctors || 0,
-//         nurses: data.byRole?.nurses || 0,
-//       });
-//     } catch (error) {
-//       console.error(error);
-//     }
-//   };
-//   // useEffect để gọi API khi component mount lần đầu
-//   useEffect(() => {
-//     fetchStaff();
-//     fetchStatistics();
-//   }, []);
-
-//   // ========================
-//   //  THÊM NHÂN VIÊN
-//   // ========================
-//   const handleAdd = () => {
-//     setEditingStaff(null);// reset editing
-//     form.resetFields();// reset form
-//     setIsModalVisible(true);// mở modal
-//   };
-
-//   // ========================
-//   //  SỬA NHÂN VIÊN
-//   // ========================
-//   const handleEdit = (staff: Staff) => {
-//     setEditingStaff(staff);
-//     // đổ dữ liệu vào form
-//     form.setFieldsValue({
-//       fullName: staff.fullName,
-//       email: staff.email,
-//       phone: staff.phone,
-//       role: staff.role,
-//       roleTitle: staff.roleTitle,
-//       licenseNo: staff.licenseNo,
-//       department: staff.department,
-//       shift: staff.shift,
-//       experienceYears: staff.experienceYears,
-//       status: staff.status,
-//       education: staff.education,
-//       skills: staff.skills,
-//       notes: staff.notes,
-//     });
-//     setIsModalVisible(true);
-//   };
-
-//   // ========================
-//   //   XEM CHI TIẾT NHÂN VIÊN
-//   // ========================
-//   const handleView = (staff: Staff) => {
-//     setSelectedStaff(staff);// lưu nhân viên được chọn
-//     setIsDetailVisible(true);// mở modal chi tiết
-//   };
-
-//   // ========================
-//   //   XÓA NHÂN VIÊN
-//   // ========================
-//   const handleDelete = async (id: string) => {
-//     try {
-//       await deleteStaffController(id);// gọi API xóa (chuyển sang trạng thái Inactive)
-//       message.success('Đã xóa (chuyển Inactive)');
-//       fetchStaff();
-//       fetchStatistics();
-//     } catch (error) {
-//       message.error('Không thể xóa nhân viên');
-//     }
-//   };
-
-//   // ========================
-//   //  LƯU (THÊM/SỬA) NHÂN VIÊN
-//   // ========================
-//   const handleSubmit = async (values: any) => {
-//     try {
-
-//       if (values.skills && values.skills.length > 255) {
-//         message.error('Kỹ năng không được vượt quá 255 ký tự');
-//         return;
-//       }
-//       // chuẩn hóa payload
-//       const payload = {
-//         fullName: values.fullName,
-//         email: values.email,
-//         phone: values.phone,
-//         role: values.role,
-//         roleTitle: values.roleTitle,
-//         licenseNo: values.licenseNo || null,
-//         department: values.department,
-//         shift: values.shift,
-//         experienceYears: Number(values.experienceYears) || 0,
-//         education: values.education || null,
-//         skills: values.skills || null,
-//         notes: values.notes || null,
-//         status: values.status || 'Active',
-//       };
-
-//       // nếu đang chỉnh sửa
-//       if (editingStaff) {
-//         await updateStaffController(editingStaff.id, values);
-//         message.success('Cập nhật thành công');
-//         // nếu là thêm mới
-//       } else {
-//         await createStaffController(values);
-//         message.success('Thêm mới thành công');
-//       }
-//       // đóng modal, làm mới danh sách
-//       setIsModalVisible(false);
-//       form.resetFields();
-//       fetchStaff();
-//       fetchStatistics();
-//     } catch (error: any) {
-//       console.error('Submit error:', error);
-//       const errorMsg = error.response?.data?.message;
-//       if (Array.isArray(errorMsg)) {
-//         message.error(errorMsg.join(', '));
-//       } else {
-//         message.error(errorMsg || 'Lưu thất bại');
-//       }
-//     }
-//   };
-
-//   // ========================
-//   //  ĐỊNH NGHĨA LABEL, MÀU SẮC, CA LÀM VIỆC
-//   // ========================
-//   const roleLabels: Record<string, string> = {
-//     Doctor: "Bác sĩ",
-//     Staff: "Điều dưỡng"
-//   };
-//   const statusColors: Record<string, string> = {
-//     Active: "green",
-//     Inactive: "red",
-//     OnLeave: "orange"
-//   };
-//   const statusLabels: Record<string, string> = {
-//     Active: "Hoạt động",
-//     Inactive: "Ngừng",
-//     OnLeave: "Nghỉ phép"
-//   };
-//   const shiftLabels: Record<string, string> = {
-//     morning: "Ca sáng",
-//     afternoon: "Ca chiều",
-//     night: "Ca đêm",
-//     flexible: "Linh hoạt",
-//   };
-
-//   // ========================
-//   //  CỘT CỦA BẢNG NHÂN VIÊN
-//   // ========================
-//   const columns = [
-//     {
-//       title: 'Nhân viên',
-//       dataIndex: 'fullName',
-//       key: 'fullName',
-//       render: (text: string, record: Staff) => (
-//         <div className="flex items-center">
-//           <Avatar size="small" icon={<UserOutlined />} className="mr-3" />
-//           <div>
-//             <div className="font-medium">{text}</div>
-//             <div className="text-sm text-gray-500">{record.email}</div>
-//           </div>
-//         </div>
-//       ),
-//     },
-//     {
-//       title: 'Vai trò',
-//       dataIndex: 'role',
-//       key: 'role',
-//       render: (role: string) => (
-//         <Tag color={role === 'Doctor' ? 'blue' : 'green'}>
-//           {roleLabels[role] || role}
-//         </Tag>
-//       ),
-//     },
-//     {
-//       title: 'Chức danh',
-//       dataIndex: 'roleTitle',
-//       key: 'roleTitle',
-//     },
-//     {
-//       title: 'Khoa/Phòng',
-//       dataIndex: 'department',
-//       key: 'department',
-//     },
-//     {
-//       title: 'Ca làm việc',
-//       dataIndex: 'shift',
-//       key: 'shift',
-//       render: (shift: string) => shiftLabels[shift] || shift,
-//     },
-//     {
-//       title: 'Trạng thái',
-//       dataIndex: 'status',
-//       key: 'status',
-//       render: (status: string) => (
-//         <Tag color={statusColors[status] || 'default'}>
-//           {statusLabels[status] || status}
-//         </Tag>
-//       ),
-//     },
-//     {
-//       title: 'Kinh nghiệm',
-//       dataIndex: 'experienceYears',
-//       key: 'experienceYears',
-//       render: (exp: number) => `${exp} năm`,
-//     },
-//     {
-//       title: 'Hành động',
-//       key: 'action',
-//       render: (_: any, record: Staff) => (
-//         <Space>
-//           <Button
-//             type="link"
-//             icon={<EyeOutlined />}
-//             onClick={() => handleView(record)}
-//           >
-//             Xem
-//           </Button>
-//           <Button
-//             type="link"
-//             icon={<EditOutlined />}
-//             onClick={() => handleEdit(record)}
-//           >
-//             Sửa
-//           </Button>
-//           <Button
-//             type="link"
-//             danger
-//             icon={<DeleteOutlined />}
-//             onClick={() => handleDelete(record.id)}
-//           >
-//             Xóa
-//           </Button>
-//         </Space>
-//       ),
-//     },
-//   ];
-//   // ========================
-//   //  JSX TRẢ VỀ - HIỂN THỊ GIAO DIỆN
-//   // ========================
-//   return (
-//     <div className="space-y-6">
-//       <h1 className="text-2xl font-bold text-gray-800 mb-2">Quản lý nhân viên</h1>
-//       <p className="text-gray-600">Quản lý thông tin, vai trò và ca làm việc</p>
-
-//       {/* Statistics */}
-//       <Row gutter={[16, 16]}>
-//         <Col xs={24} sm={6}>
-//           <Card>
-//             <Statistic
-//               title="Tổng nhân viên"
-//               value={stats.total}
-//               prefix={<TeamOutlined />}
-//               valueStyle={{ color: '#1890ff' }}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={6}>
-//           <Card>
-//             <Statistic
-//               title="Đang hoạt động"
-//               value={stats.active}
-//               valueStyle={{ color: '#52c41a' }}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={6}>
-//           <Card>
-//             <Statistic
-//               title="Bác sĩ"
-//               value={stats.doctors}
-//               prefix={<SafetyOutlined />}
-//               valueStyle={{ color: '#1890ff' }}
-//             />
-//           </Card>
-//         </Col>
-//         <Col xs={24} sm={6}>
-//           <Card>
-//             <Statistic
-//               title="Điều dưỡng"
-//               value={stats.nurses}
-//               prefix={<HeartOutlined />}
-//               valueStyle={{ color: '#52c41a' }}
-//             />
-//           </Card>
-//         </Col>
-//       </Row>
-
-//       {/* Staff List */}
-//       <Card>
-//         <div className="flex justify-between items-center mb-4">
-//           <h2 className="text-lg font-semibold">Danh sách nhân viên</h2>
-//           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-//             Thêm nhân viên
-//           </Button>
-//         </div>
-
-//         <Tabs defaultActiveKey="all">
-//           <TabPane tab={`Tất cả (${stats.total})`} key="all">
-//             <Table
-//               columns={columns}
-//               dataSource={staff}
-//               loading={loading}
-//               rowKey="id"
-//               pagination={{ pageSize: 10 }}
-//             />
-//           </TabPane>
-//           <TabPane tab={`Đang hoạt động (${stats.active})`} key="active">
-//             <Table
-//               columns={columns}
-//               dataSource={staff.filter((s) => s.status === 'Active')}
-//               rowKey="id"
-//             />
-//           </TabPane>
-//           <TabPane tab={`Bác sĩ (${stats.doctors})`} key="doctors">
-//             <Table
-//               columns={columns}
-//               dataSource={staff.filter(s => s.role === 'Doctor')}
-//               rowKey="id"
-//               pagination={{ pageSize: 10 }}
-//             />
-//           </TabPane>
-//           <TabPane tab={`Điều dưỡng (${stats.nurses})`} key="nurses">
-//             <Table
-//               columns={columns}
-//               dataSource={staff.filter(s => s.role === 'Staff')}
-//               rowKey="id"
-//               pagination={{ pageSize: 10 }}
-//             />
-//           </TabPane>
-//         </Tabs>
-//       </Card>
-
-//       {/* Add/Edit Modal */}
-//       <Modal
-//         title={editingStaff ? 'Sửa thông tin nhân viên' : 'Thêm nhân viên mới'}
-//         open={isModalVisible}
-//         onCancel={() => setIsModalVisible(false)}
-//         footer={null}
-//         width={800}
-//       >
-//         <Form form={form} layout="vertical" onFinish={handleSubmit}>
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="fullName"
-//                 label="Họ và tên"
-//                 rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
-//               >
-//                 <Input />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="email"
-//                 label="Email"
-//                 rules={[
-//                   { required: true, message: 'Vui lòng nhập email' },
-//                   { type: 'email', message: 'Email không hợp lệ' },
-//                 ]}
-//               >
-//                 <Input />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="phone"
-//                 label="Số điện thoại"
-//                 rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
-//               >
-//                 <Input />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="role"
-//                 label="Vai trò"
-//                 rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
-//               >
-//                 <Select placeholder="Chọn vai trò">
-//                   <Option value="Doctor">Bác sĩ</Option>
-//                   <Option value="Staff">Điều dưỡng</Option>
-//                 </Select>
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="roleTitle"
-//                 label="Chức danh"
-//                 rules={[{ required: true, message: 'Vui lòng nhập chức danh' }]}
-//               >
-//                 <Input placeholder="VD: Bác sĩ nội khoa" />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item name="licenseNo" label="Số chứng chỉ hành nghề">
-//                 <Input placeholder="Số giấy phép" />
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="department"
-//                 label="Khoa/Phòng"
-//                 rules={[{ required: true, message: 'Vui lòng nhập khoa/phòng' }]}
-//               >
-//                 <Input placeholder="VD: Nội khoa" />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="shift"
-//                 label="Ca làm việc"
-//                 rules={[{ required: true }]}
-//               >
-//                 <Select placeholder="Chọn ca">
-//                   <Option value="morning">Ca sáng</Option>
-//                   <Option value="afternoon">Ca chiều</Option>
-//                   <Option value="night">Ca đêm</Option>
-//                   <Option value="flexible">Linh hoạt</Option>
-//                 </Select>
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Row gutter={16}>
-//             <Col span={12}>
-//               <Form.Item
-//                 name="experienceYears"
-//                 label="Kinh nghiệm (năm)"
-//                 rules={[{ required: true }]}
-//               >
-//                 <Input type="number" min={0} />
-//               </Form.Item>
-//             </Col>
-//             <Col span={12}>
-//               <Form.Item name="status" label="Trạng thái" initialValue="Active">
-//                 <Select>
-//                   <Option value="Active">Đang làm việc</Option>
-//                   <Option value="Inactive">Nghỉ việc</Option>
-//                   <Option value="OnLeave">Nghỉ phép</Option>
-//                 </Select>
-//               </Form.Item>
-//             </Col>
-//           </Row>
-
-//           <Form.Item name="education" label="Bằng cấp">
-//             <Input placeholder="VD: Bác sĩ đa khoa" />
-//           </Form.Item>
-
-//           <Form.Item
-//             name="skills"
-//             label="Kỹ năng/Chuyên môn"
-//             rules={[{ max: 255, message: 'Không vượt quá 255 ký tự' }]}
-//           >
-//             <Input.TextArea
-//               rows={2}
-//               placeholder="VD: Siêu âm tim, Nội soi..."
-//               maxLength={255}
-//               showCount
-//             />
-//           </Form.Item>
-
-//           <Form.Item name="notes" label="Ghi chú">
-//             <Input.TextArea rows={3} />
-//           </Form.Item>
-
-//           {!editingStaff && (
-//             <Form.Item
-//               name="password"
-//               label="Mật khẩu"
-//               extra="Để trống = 123456"
-//             >
-//               <Input.Password placeholder="Mật khẩu mặc định: 123456" />
-//             </Form.Item>
-//           )}
-
-//           <Form.Item>
-//             <Space>
-//               <Button type="primary" htmlType="submit">
-//                 {editingStaff ? 'Cập nhật' : 'Thêm mới'}
-//               </Button>
-//               <Button onClick={() => setIsModalVisible(false)}>Hủy</Button>
-//             </Space>
-//           </Form.Item>
-//         </Form>
-//       </Modal>
-
-//       {/* Detail Modal */}
-//       <StaffDetailModal
-//         visible={isDetailVisible}
-//         staff={selectedStaff}
-//         onClose={() => setIsDetailVisible(false)}
-//       />
-//     </div>
-//   );
-// };
-
-// export default StaffManagement;
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card, Table, Button, Modal, Form, Input, Select, Space, Tag,
-  Row, Col, Statistic, Avatar, Tabs, message
+  Row, Col, Statistic, Avatar, Tabs, message, Upload, InputNumber
 } from "antd";
 import {
   EyeOutlined, UserOutlined, PlusOutlined, EditOutlined,
-  DeleteOutlined, TeamOutlined, SafetyOutlined, HeartOutlined
+  DeleteOutlined, TeamOutlined, SafetyOutlined, HeartOutlined, UploadOutlined, SearchOutlined
 } from "@ant-design/icons";
+import { compressImage } from '../utils/imageCompress';
+import apiClient from '../api/apiClient';
 import { Staff } from "../types";
 import {
   fetchStaffController, createStaffController, updateStaffController,
@@ -601,6 +28,15 @@ const StaffManagement: React.FC = () => {
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isDetailVisible, setIsDetailVisible] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+  
+  // Filter và search states
+  const [searchText, setSearchText] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [shiftFilter, setShiftFilter] = useState<string>('all');
+  const [minExperience, setMinExperience] = useState<number | null>(null);
+  const [maxExperience, setMaxExperience] = useState<number | null>(null);
 
   useEffect(() => {
     loadData();
@@ -629,8 +65,15 @@ const StaffManagement: React.FC = () => {
 
   const handleSubmit = async (values: any) => {
     try {
+      // Đảm bảo avatar được gửi (có thể là null hoặc URL)
+      // Ưu tiên avatarUrl từ state, sau đó là values.avatar từ form
+      const avatarValue = avatarUrl || values.avatar || null;
+      // Chuyển empty string thành null
+      const finalAvatar = avatarValue === '' ? null : avatarValue;
+      
       const payload = {
         ...values,
+        avatar: finalAvatar,
         experienceYears: Number(values.experienceYears) || 0,
         status: values.status || "Active"
       };
@@ -639,6 +82,7 @@ const StaffManagement: React.FC = () => {
         : await createStaffController(payload);
       message.success(editingStaff ? "Cập nhật thành công" : "Thêm mới thành công");
       setIsModalVisible(false);
+      setAvatarUrl('');
       form.resetFields();
       loadData();
     } catch (error: any) {
@@ -657,19 +101,61 @@ const StaffManagement: React.FC = () => {
     }
   };
 
+  // Hàm xử lý upload avatar
+  const handleAvatarUpload = async (file: File): Promise<string> => {
+    try {
+      setUploading(true);
+      // Compress image before upload
+      const compressedFile = await compressImage(file, 800, 800, 0.8);
+      
+      // Upload to server
+      const formData = new FormData();
+      formData.append('avatar', compressedFile);
+      
+      const response = await apiClient.post('/api/staff/upload-avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      const fileUrl = response.data.url;
+      setAvatarUrl(fileUrl);
+      form.setFieldsValue({ avatar: fileUrl });
+      message.success('Tải lên hình ảnh thành công');
+      return fileUrl;
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Tải lên hình ảnh thất bại');
+      throw error;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAvatarRemove = () => {
+    setAvatarUrl('');
+    form.setFieldsValue({ avatar: '' });
+  };
+
   const columns = [
     {
       title: "Nhân viên",
       dataIndex: "fullName",
-      render: (text: string, r: Staff) => (
-        <div className="flex items-center">
-          <Avatar size="small" icon={<UserOutlined />} className="mr-2" />
-          <div>
-            <div className="font-medium">{text}</div>
-            <div className="text-xs text-gray-500">{r.email}</div>
+      render: (text: string, r: Staff) => {
+        const avatarSrc = r.avatar 
+          ? (r.avatar.startsWith('http') 
+              ? r.avatar 
+              : `${process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:3000'}${r.avatar}`)
+          : undefined;
+        return (
+          <div className="flex items-center">
+            <Avatar size="small" src={avatarSrc} icon={<UserOutlined />} className="mr-2" />
+            <div>
+              <div className="font-medium">{text}</div>
+              <div className="text-xs text-gray-500">{r.email}</div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Vai trò",
@@ -703,12 +189,65 @@ const StaffManagement: React.FC = () => {
       render: (_: any, r: Staff) => (
         <Space>
           <Button icon={<EyeOutlined />} type="link" onClick={() => { setSelectedStaff(r); setIsDetailVisible(true); }}>Xem</Button>
-          <Button icon={<EditOutlined />} type="link" onClick={() => { setEditingStaff(r); form.setFieldsValue(r); setIsModalVisible(true); }}>Sửa</Button>
+          <Button icon={<EditOutlined />} type="link" onClick={() => { 
+            // Extract relative path if it's a full URL
+            let avatarPath = r.avatar || '';
+            if (avatarPath && avatarPath.startsWith('http')) {
+              try {
+                const urlObj = new URL(avatarPath);
+                avatarPath = urlObj.pathname;
+              } catch {
+                // If URL parsing fails, keep original
+                avatarPath = r.avatar || '';
+              }
+            }
+            setEditingStaff(r); 
+            setAvatarUrl(avatarPath || ''); 
+            form.setFieldsValue({ ...r, avatar: avatarPath || null }); 
+            setIsModalVisible(true); 
+          }}>Sửa</Button>
           <Button icon={<DeleteOutlined />} type="link" danger onClick={() => handleDelete(r.id)}>Xóa</Button>
         </Space>
       ),
     },
   ];
+
+  // Lọc dữ liệu dựa trên search và filter
+  const filteredStaff = useMemo(() => {
+    let filtered = [...staff];
+
+    // Lọc theo tìm kiếm (tên, email, số điện thoại, chức danh, khoa/phòng)
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      filtered = filtered.filter(s => 
+        s.fullName?.toLowerCase().includes(searchLower) ||
+        s.email?.toLowerCase().includes(searchLower) ||
+        s.phone?.toLowerCase().includes(searchLower) ||
+        s.roleTitle?.toLowerCase().includes(searchLower) ||
+        s.department?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Lọc theo trạng thái
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(s => s.status === statusFilter);
+    }
+
+    // Lọc theo ca làm việc
+    if (shiftFilter !== 'all') {
+      filtered = filtered.filter(s => s.shift === shiftFilter);
+    }
+
+    // Lọc theo kinh nghiệm
+    if (minExperience !== null) {
+      filtered = filtered.filter(s => s.experienceYears !== null && s.experienceYears !== undefined && s.experienceYears >= minExperience);
+    }
+    if (maxExperience !== null) {
+      filtered = filtered.filter(s => s.experienceYears !== null && s.experienceYears !== undefined && s.experienceYears <= maxExperience);
+    }
+
+    return filtered;
+  }, [staff, searchText, statusFilter, shiftFilter, minExperience, maxExperience]);
 
   return (
     <div className="space-y-6">
@@ -717,10 +256,10 @@ const StaffManagement: React.FC = () => {
           <h1 className="text-2xl font-bold text-gray-800 mb-1">Quản lý nhân viên</h1>
           <p className="text-gray-600">Thông tin, vai trò và ca làm việc</p>
         </div>
-        <Button
+          <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => { setEditingStaff(null); form.resetFields(); setIsModalVisible(true); }}
+          onClick={() => { setEditingStaff(null); form.resetFields(); setAvatarUrl(''); setIsModalVisible(true); }}
         >
           Thêm nhân viên
         </Button>
@@ -734,20 +273,102 @@ const StaffManagement: React.FC = () => {
         <Col span={6}><Card><Statistic title="Điều dưỡng" value={stats.nurses} prefix={<HeartOutlined />} valueStyle={{ color: "#52c41a" }} /></Card></Col>
       </Row>
 
+      {/* Bộ lọc và tìm kiếm */}
+      <Card>
+        <Row gutter={16} align="middle">
+          <Col span={6}>
+            <Input
+              placeholder="Tìm kiếm theo tên, email, SĐT, chức danh, khoa/phòng..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+          </Col>
+          <Col span={4}>
+            <Select
+              placeholder="Trạng thái"
+              value={statusFilter}
+              onChange={(value) => setStatusFilter(value || 'all')}
+              style={{ width: '100%' }}
+              allowClear
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="Active">Hoạt động</Option>
+              <Option value="Inactive">Nghỉ việc</Option>
+              <Option value="OnLeave">Nghỉ phép</Option>
+            </Select>
+          </Col>
+          <Col span={4}>
+            <Select
+              placeholder="Ca làm việc"
+              value={shiftFilter}
+              onChange={(value) => setShiftFilter(value || 'all')}
+              style={{ width: '100%' }}
+              allowClear
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="morning">Ca sáng</Option>
+              <Option value="afternoon">Ca chiều</Option>
+              <Option value="night">Ca đêm</Option>
+              <Option value="flexible">Linh hoạt</Option>
+            </Select>
+          </Col>
+          <Col span={3}>
+            <InputNumber
+              placeholder="Kinh nghiệm tối thiểu"
+              value={minExperience}
+              onChange={(value) => setMinExperience(value)}
+              min={0}
+              max={50}
+              style={{ width: '100%' }}
+            />
+          </Col>
+          <Col span={3}>
+            <InputNumber
+              placeholder="Kinh nghiệm tối đa"
+              value={maxExperience}
+              onChange={(value) => setMaxExperience(value)}
+              min={0}
+              max={50}
+              style={{ width: '100%' }}
+            />
+          </Col>
+          <Col span={4}>
+            <Space>
+              <Button 
+                onClick={() => {
+                  setSearchText('');
+                  setStatusFilter('all');
+                  setShiftFilter('all');
+                  setMinExperience(null);
+                  setMaxExperience(null);
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+              <span className="text-gray-500">
+                Hiển thị: {filteredStaff.length} / {staff.length}
+              </span>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
       {/* Danh sách nhân viên */}
       <Card>
         <Tabs defaultActiveKey="all">
-          <TabPane tab={`Tất cả (${stats.total})`} key="all">
-            <Table columns={columns} dataSource={staff} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
+          <TabPane tab={`Tất cả (${filteredStaff.length})`} key="all">
+            <Table columns={columns} dataSource={filteredStaff} loading={loading} rowKey="id" pagination={{ pageSize: 10 }} />
           </TabPane>
-          <TabPane tab={`Đang hoạt động (${stats.active})`} key="active">
-            <Table columns={columns} dataSource={staff.filter(s => s.status === "Active")} rowKey="id" />
+          <TabPane tab={`Đang hoạt động (${filteredStaff.filter(s => s.status === "Active").length})`} key="active">
+            <Table columns={columns} dataSource={filteredStaff.filter(s => s.status === "Active")} rowKey="id" />
           </TabPane>
-          <TabPane tab={`Bác sĩ (${stats.doctors})`} key="doctors">
-            <Table columns={columns} dataSource={staff.filter(s => s.role === "Doctor")} rowKey="id" />
+          <TabPane tab={`Bác sĩ (${filteredStaff.filter(s => s.role === "Doctor").length})`} key="doctors">
+            <Table columns={columns} dataSource={filteredStaff.filter(s => s.role === "Doctor")} rowKey="id" />
           </TabPane>
-          <TabPane tab={`Điều dưỡng (${stats.nurses})`} key="nurses">
-            <Table columns={columns} dataSource={staff.filter(s => s.role === "Staff")} rowKey="id" />
+          <TabPane tab={`Điều dưỡng (${filteredStaff.filter(s => s.role === "Staff").length})`} key="nurses">
+            <Table columns={columns} dataSource={filteredStaff.filter(s => s.role === "Staff")} rowKey="id" />
           </TabPane>
         </Tabs>
       </Card>
@@ -756,11 +377,74 @@ const StaffManagement: React.FC = () => {
       <Modal
         title={editingStaff ? "Sửa thông tin" : "Thêm nhân viên"}
         open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
+        onCancel={() => { setIsModalVisible(false); setAvatarUrl(''); form.resetFields(); }}
         footer={null}
         width={750}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          {/* Avatar Upload Section */}
+          <Row gutter={16} className="mb-4">
+            <Col span={24}>
+              <Form.Item label="Hình ảnh đại diện">
+                <div className="flex items-center space-x-4">
+                  <Avatar
+                    size={80}
+                    src={avatarUrl ? (avatarUrl.startsWith('http') ? avatarUrl : `${process.env.REACT_APP_API_URL?.replace(/\/$/, '') || 'http://localhost:3000'}${avatarUrl}`) : undefined}
+                    icon={<UserOutlined />}
+                  >
+                    {form.getFieldValue('fullName')?.charAt(0) || 'U'}
+                  </Avatar>
+                  <div className="flex-1">
+                    <Upload
+                      accept="image/*"
+                      showUploadList={false}
+                      beforeUpload={(file) => {
+                        // Validate file type
+                        const isImage = file.type.startsWith('image/');
+                        if (!isImage) {
+                          message.error('Chỉ được tải lên file hình ảnh!');
+                          return false;
+                        }
+
+                        // Validate file size (max 2MB)
+                        const isLt2M = file.size / 1024 / 1024 < 2;
+                        if (!isLt2M) {
+                          message.error('Hình ảnh phải nhỏ hơn 2MB!');
+                          return false;
+                        }
+
+                        setUploading(true);
+                        handleAvatarUpload(file).finally(() => setUploading(false));
+                        return false; // Prevent default upload
+                      }}
+                    >
+                      <Button loading={uploading} icon={<UploadOutlined />}>
+                        {avatarUrl ? 'Thay đổi hình ảnh' : 'Tải lên hình ảnh'}
+                      </Button>
+                    </Upload>
+                    {avatarUrl && (
+                      <Button
+                        type="text"
+                        danger
+                        onClick={handleAvatarRemove}
+                        className="ml-2"
+                      >
+                        Xóa hình ảnh
+                      </Button>
+                    )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Hỗ trợ: JPG, PNG, GIF. Kích thước tối đa: 2MB
+                    </div>
+                  </div>
+                </div>
+              </Form.Item>
+              {/* Hidden field to store avatar URL */}
+              <Form.Item name="avatar" style={{ display: 'none' }}>
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Row gutter={16}>
             <Col span={12}><Form.Item name="fullName" label="Họ và tên" rules={[{ required: true }]}><Input /></Form.Item></Col>
             <Col span={12}><Form.Item name="email" label="Email" rules={[{ required: true, type: "email" }]}><Input /></Form.Item></Col>

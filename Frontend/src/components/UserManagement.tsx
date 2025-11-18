@@ -87,7 +87,7 @@ const UserManagement: React.FC = () => {
       role: 'Doctor',
       label: 'Bác sĩ',
       description: 'Truy cập hồ sơ y tế, kê đơn, chỉ định điều trị',
-      permissions: ['medical_records', 'prescription', 'treatment_plan', 'patient_consultation'],
+      permissions: ['medical_records', 'treatment_plan', 'patient_consultation'],
       color: 'green',
       icon: 'MedicineBoxOutlined'
     },
@@ -197,36 +197,53 @@ const UserManagement: React.FC = () => {
     setUserFormModalVisible(true);
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  // Helper function to get user ID (prefer userId, fallback to id)
+  const getUserIdentifier = (user: User): string => {
+    if (user.userId !== undefined && user.userId !== null) {
+      return String(user.userId);
+    }
+    if (user.id !== undefined && user.id !== null) {
+      return String(user.id);
+    }
+    throw new Error('User ID không hợp lệ');
+  };
+
+  const handleDeleteUser = async (user: User) => {
     try {
+      const userId = getUserIdentifier(user);
       await deleteUser(userId);
       message.success('Xóa người dùng thành công');
       loadUsers();
       loadUserStats();
     } catch (error: any) {
-      message.error('Xóa người dùng thất bại');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Xóa người dùng thất bại';
+      message.error(errorMessage);
     }
   };
 
-  const handleBanUser = async (userId: string) => {
+  const handleBanUser = async (user: User) => {
     try {
+      const userId = getUserIdentifier(user);
       await banUser(userId);
       message.success('Khóa tài khoản thành công');
       loadUsers();
       loadUserStats();
     } catch (error: any) {
-      message.error('Khóa tài khoản thất bại');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Khóa tài khoản thất bại';
+      message.error(errorMessage);
     }
   };
 
-  const handleUnbanUser = async (userId: string) => {
+  const handleUnbanUser = async (user: User) => {
     try {
+      const userId = getUserIdentifier(user);
       await unbanUser(userId);
       message.success('Mở khóa tài khoản thành công');
       loadUsers();
       loadUserStats();
     } catch (error: any) {
-      message.error('Mở khóa tài khoản thất bại');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Mở khóa tài khoản thất bại';
+      message.error(errorMessage);
     }
   };
 
@@ -324,7 +341,7 @@ const UserManagement: React.FC = () => {
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 200,
       render: (record: User) => {
         const menu = (
           <Menu>
@@ -342,11 +359,20 @@ const UserManagement: React.FC = () => {
             >
               Chỉnh sửa
             </Menu.Item>
+            <Menu.Divider />
             {record.status === 'Banned' ? (
               <Menu.Item 
                 key="unban" 
                 icon={<UnlockOutlined />}
-                onClick={() => handleUnbanUser(record.id)}
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Mở khóa tài khoản',
+                    content: `Bạn có chắc muốn mở khóa tài khoản của ${record.fullName}?`,
+                    okText: 'Mở khóa',
+                    cancelText: 'Hủy',
+                    onOk: () => handleUnbanUser(record),
+                  });
+                }}
               >
                 Mở khóa
               </Menu.Item>
@@ -354,16 +380,35 @@ const UserManagement: React.FC = () => {
               <Menu.Item 
                 key="ban" 
                 icon={<LockOutlined />}
-                onClick={() => handleBanUser(record.id)}
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Khóa tài khoản',
+                    content: `Bạn có chắc muốn khóa tài khoản của ${record.fullName}?`,
+                    okText: 'Khóa',
+                    cancelText: 'Hủy',
+                    okType: 'danger',
+                    onOk: () => handleBanUser(record),
+                  });
+                }}
               >
                 Khóa tài khoản
               </Menu.Item>
             )}
+            <Menu.Divider />
             <Menu.Item 
               key="delete" 
               danger
               icon={<DeleteOutlined />}
-              onClick={() => handleDeleteUser(record.id)}
+              onClick={() => {
+                Modal.confirm({
+                  title: 'Xóa người dùng',
+                  content: `Bạn có chắc muốn xóa người dùng ${record.fullName}? Hành động này không thể hoàn tác!`,
+                  okText: 'Xóa',
+                  cancelText: 'Hủy',
+                  okType: 'danger',
+                  onOk: () => handleDeleteUser(record),
+                });
+              }}
             >
               Xóa
             </Menu.Item>
@@ -492,9 +537,22 @@ const UserManagement: React.FC = () => {
             <Space>
               <Button 
                 icon={<ReloadOutlined />} 
-                onClick={loadUsers}
+                onClick={() => {
+                  loadUsers();
+                  loadUserStats();
+                }}
               >
                 Làm mới
+              </Button>
+              <Button 
+                onClick={() => {
+                  setSearchText('');
+                  setRoleFilter('all');
+                  setStatusFilter('all');
+                  setDateRange(null);
+                }}
+              >
+                Xóa bộ lọc
               </Button>
             </Space>
           </Col>
@@ -514,7 +572,7 @@ const UserManagement: React.FC = () => {
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => 
-              `${range[0]}-${range[1]} của ${total} người dùng`,
+              `Hiển thị ${range[0]}-${range[1]} của ${total} người dùng`,
           }}
         />
       </Card>

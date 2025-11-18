@@ -8,6 +8,9 @@ import {
   Delete,
   UseGuards,
   Query,
+  HttpCode,
+  HttpStatus,
+  Req,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -23,33 +26,41 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
-  create(@Body() createDto: CreateAppointmentDto) {
+  @HttpCode(HttpStatus.CREATED)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  async create(@Body() createDto: CreateAppointmentDto) {
     return this.appointmentsService.create(createDto);
   }
 
   @Get()
-  findAll(@Query('elderId') elderId?: string) {
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  async findAll(@Query('elderId') elderId: string, @Req() req) {
+    const user = req.user; // Lấy user từ JWT token
     if (elderId) {
-      return this.appointmentsService.findByElder(Number(elderId));
+      return this.appointmentsService.findByElder(Number(elderId), user);
     }
-    return this.appointmentsService.findAll();
+    return this.appointmentsService.findAll(user);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.appointmentsService.findOne(Number(id));
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  async findOne(@Param('id') id: string, @Req() req) {
+    const user = req.user; // Lấy user từ JWT token
+    return this.appointmentsService.findOne(Number(id), user);
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
-  update(@Param('id') id: string, @Body() updateDto: UpdateAppointmentDto) {
-    return this.appointmentsService.update(Number(id), updateDto);
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF)
+  async update(@Param('id') id: string, @Body() updateDto: UpdateAppointmentDto, @Req() req) {
+    const user = req.user; // Lấy user từ JWT token
+    return this.appointmentsService.update(Number(id), updateDto, user);
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
-  remove(@Param('id') id: string) {
-    return this.appointmentsService.remove(Number(id));
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.DOCTOR)
+  async remove(@Param('id') id: string, @Req() req) {
+    const user = req.user; // Lấy user từ JWT token
+    return this.appointmentsService.remove(Number(id), user);
   }
 }

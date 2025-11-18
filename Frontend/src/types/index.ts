@@ -8,10 +8,9 @@ export interface Elderly {
   gender: string;
   address?: string;
   phone: string;
+  avatar?: string | null;
+  email?: string | null;
   contactPersonId?: number | null;
-  contactName?: string;
-  contactPhone?: string;
-  relationship?: string;
   note?: string;
   status: string;
   createdAt: Date;
@@ -24,6 +23,9 @@ export interface Elderly {
   doctor: string;
   lastCheckup: Date;
   nextCheckup: Date;
+  familyName?: string | null;
+  familyPhone?: string | null;
+  relationship?: string | null;
   
 }
 
@@ -48,7 +50,6 @@ export interface Medication {
     userId: number;
     fullName: string;
   };
-  prescription?: Prescription;
   staffInCharge?: number | null; // ID nhân viên phụ trách thuốc
   staff?: {
     staffId: number;
@@ -63,50 +64,6 @@ export interface MedicationItem {
   frequency?: string;
   time?: string;
   notes?: string;
-}
-
-export interface Prescription {
-  prescriptionId: number;
-  elderId: number;
-  prescribedBy: number;
-  diagnosis?: string;
-  notes?: string;
-  prescriptionDate: string;
-  startDate?: string;
-  endDate?: string;
-  status: string;
-  elder?: {
-    elderId: number;
-    fullName: string;
-  };
-  prescriber?: {
-    userId: number;
-    fullName: string;
-  };
-  medications: Medication[];
-}
-
-export interface CreatePrescriptionRequest {
-  elderId: number;
-  prescribedBy: number;
-  diagnosis?: string;
-  notes?: string;
-  prescriptionDate: string;
-  startDate?: string;
-  endDate?: string;
-  medications: MedicationItem[];
-}
-
-export interface UpdatePrescriptionRequest {
-  elderId?: number;
-  prescribedBy?: number;
-  diagnosis?: string;
-  notes?: string;
-  prescriptionDate?: string;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  medications?: MedicationItem[];
 }
 // Staff Types
 export interface Staff {
@@ -124,6 +81,7 @@ export interface Staff {
   education?: string;
   skills?: string;
   notes?: string;
+  avatar?: string | null;
   hireDate?: Date;
   createdAt?: Date;
   updatedAt?: Date;
